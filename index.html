@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alcaldía de Baruta | Calidad de Vida</title>
+    <link rel="icon" type="image/png" href="logo_baruta.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts (Inter + Montserrat) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet JS & CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Tailwind Config with Custom Baruta Palette -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        baruta: {
+                            institucional: '#145C3B', // Verde oscuro institucional
+                            naturaleza: '#76A943',     // Verde hoja / acción
+                            calido: '#F5F7F3',         // Fondo blanco cálido
+                            oscuro: '#26352E',         // Texto / gris muy oscuro
+                            claro: '#D9E8DD',          // Verde menta suave
+                            accent: '#F39C12'          // Acento alerta/noticias
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Montserrat', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F5F7F3;
+            color: #26352E;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-heading {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Hero Video/Overlay Effect */
+        .hero-gradient {
+            background: linear-gradient(180deg, rgba(38, 53, 46, 0.75) 0%, rgba(20, 92, 59, 0.85) 100%);
+        }
+
+        /* Leaflet map custom height */
+        #baruta-map {
+            height: 480px;
+            width: 100%;
+            border-radius: 1rem;
+            z-index: 10;
+        }
+
+        /* Before/After Image Slider Styling */
+        .ba-slider-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 1rem;
+            user-select: none;
+        }
+
+        .ba-image-before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .ba-image-after {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+        }
+
+        .ba-slider-bar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background-color: #ffffff;
+            cursor: ew-resize;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        .ba-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: #76A943;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 3px solid #ffffff;
+        }
+
+        /* Carousel 3D Noticias con Física de Arrastre */
+        .carousel-3d-viewport {
+            perspective: 1400px;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: pan-y;
+        }
+
+        .carousel-3d-viewport.is-dragging {
+            cursor: grabbing;
+        }
+
+        .carousel-3d-stage {
+            transform-style: preserve-3d;
+            position: relative;
+            height: 495px;
+        }
+
+        .carousel-3d-card {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 92%;
+            max-width: 410px;
+            height: 100%;
+            margin-left: -205px;
+            transform-style: preserve-3d;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+            will-change: transform, opacity;
+        }
+
+        @media (max-width: 640px) {
+            .carousel-3d-card {
+                width: 88%;
+                margin-left: -44%;
+            }
+
+            .carousel-3d-stage {
+                height: 480px;
+            }
+        }
+
+        .carousel-3d-viewport.is-dragging .carousel-3d-card {
+            transition: none !important;
+        }
+
+        /* Animaciones Baruta en Cifras */
+        .cifra-card {
+            opacity: 0;
+            transform: translateY(28px) scale(0.96);
+            transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+        }
+
+        .cifra-card.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        @keyframes counterFinishPulse {
+            0% {
+                transform: scale(1);
+            }
+
+            45% {
+                transform: scale(1.08);
+                text-shadow: 0 0 22px rgba(118, 169, 67, 0.75);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .counter-finished {
+            animation: counterFinishPulse 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #F5F7F3;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #145C3B;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #76A943;
+        }
+
+        /* 3D Carousel Styles */
+        .carousel-3d-viewport {
+            perspective: 1400px;
+            position: relative;
+            width: 100%;
+            height: 510px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-3d-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-3d-card {
+            position: absolute;
+            width: 340px;
+            max-width: 86vw;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease, box-shadow 0.65s ease;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+        }
+
+        @media (min-width: 640px) {
+            .carousel-3d-card {
+                width: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-baruta-naturaleza selection:text-white">
+
+    <!-- TOP EMERGENCY & CITIZEN ALERT BAR -->
+    <div
+        class="bg-baruta-oscuro text-white text-xs md:text-sm py-2 px-4 shadow-md sticky top-0 z-50 border-b border-baruta-institucional">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-4">
+                <span class="inline-flex items-center gap-1.5 font-semibold text-red-400 animate-pulse">
+                    <i class="fa-solid fa-phone-volume"></i> Emergencias Baruta:
+                </span>
+                <a href="tel:02129038511" class="hover:underline font-bold text-white"><i
+                        class="fa-solid fa-shield-halved text-baruta-naturaleza mr-1"></i> (0212) 903-8511</a>
+                <span class="hidden sm:inline text-gray-400">|</span>
+                <a href="tel:171" class="hidden sm:inline hover:underline font-bold text-white"><i
+                        class="fa-solid fa-truck-medical text-baruta-naturaleza mr-1"></i> 171</a>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+                <span class="hidden md:inline"><i class="fa-regular fa-clock mr-1 text-baruta-naturaleza"></i> Atención
+                    Ciudadana: Lun - Vie 8:00 AM - 4:00 PM</span>
+                <button onclick="openModal('modal-reporte')"
+                    class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-full text-xs transition duration-200 flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-bullhorn"></i> Reporte Ciudadano
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER & NAVIGATION -->
+    <header
+        class="bg-white/95 backdrop-blur-md sticky top-[37px] z-40 shadow-sm border-b border-gray-100 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+
+                <!-- Logo Oficial Baruta -->
+                <a href="#inicio" onclick="closeNewsDetail()" class="flex items-center gap-3 group">
+                    <div
+                        class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform duration-300 p-1.5">
+                        <!-- Hoja de Baruta SVG -->
+                        <img src="logo_baruta.png" alt="logo">
+                    </div>
+                    <div>
+                        <span
+                            class="block font-heading font-black text-2xl text-baruta-institucional leading-none tracking-tight">BARUTA</span>
+                        <span class="block text-xs font-semibold text-gray-500 uppercase tracking-widest mt-0.5">Calidad
+                            de Vida</span>
+                    </div>
+                </a>
+                <!-- Desktop Navigation Menu -->
+                <nav class="hidden lg:flex items-center space-x-6">
+                    <a href="#inicio" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Inicio</a>
+                    <a href="#alcaldia" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">La
+                        Alcaldía</a>
+                    <a href="#noticias" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Noticias</a>
+                    <a href="#baruta-social" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Baruta
+                        Social</a>
+                    <a href="#seguridad" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Seguridad</a>
+                    <a href="#transforma" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Baruta
+                        Transforma</a>
+                    <a href="#tramites" onclick="closeNewsDetail()"
+                        class="text-sm font-semibold text-baruta-oscuro hover:text-baruta-institucional transition duration-150">Trámites
+                        y Servicios</a>
+                </nav>
+
+                <!-- Search and Action Quick Buttons -->
+                <div class="hidden md:flex items-center gap-3">
+                    <button onclick="toggleSearch()"
+                        class="p-2 text-gray-600 hover:text-baruta-institucional rounded-full hover:bg-baruta-claro/50 transition"
+                        aria-label="Buscar">
+                        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                    </button>
+                    <a href="#tramites" onclick="closeNewsDetail()"
+                        class="bg-baruta-institucional hover:bg-baruta-oscuro text-white text-sm font-bold px-4 py-2.5 rounded-lg transition shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Portal de Pagos
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="lg:hidden p-2 text-baruta-oscuro focus:outline-none"
+                    onclick="toggleMobileMenu()" aria-label="Menú">
+                    <i class="fa-solid fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Drawer -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-b border-gray-200 px-4 pt-2 pb-6 space-y-3">
+            <a href="#inicio" class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Inicio</a>
+            <a href="#alcaldia" class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">La Alcaldía</a>
+            <a href="#noticias" class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Noticias</a>
+            <a href="#baruta-social"
+                class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Baruta Social</a>
+            <a href="#seguridad" class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Seguridad</a>
+            <a href="#transforma" class="block py-2 text-base font-semibold text-baruta-oscuro border-b border-gray-100"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Baruta Transforma</a>
+            <a href="#tramites" class="block py-2 text-base font-semibold text-baruta-oscuro"
+                onclick="closeNewsDetail(); toggleMobileMenu()">Trámites y Servicios</a>
+            <div class="pt-2 flex flex-col gap-2">
+                <a href="#tramites" onclick="closeNewsDetail(); toggleMobileMenu()"
+                    class="w-full bg-baruta-institucional text-center text-white py-2.5 rounded-lg font-bold">Portal de
+                    Pagos</a>
+            </div>
+        </div>
+
+        <!-- Search Bar Dropdown -->
+        <div id="search-bar" class="hidden bg-baruta-claro p-4 border-b border-baruta-institucional/20">
+            <div class="max-w-3xl mx-auto flex gap-2">
+                <input type="text"
+                    placeholder="¿Qué trámite o servicio buscas? Ej. Impuesto vehicular, solvencia, catastro..."
+                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-baruta-institucional text-sm">
+                <button onclick="showToastNotification('Buscando en el portal institucional de Baruta...')"
+                    class="bg-baruta-institucional text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-baruta-oscuro">Buscar</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL DEL PORTAL (SPA VIEW) -->
+    <main id="main-portal-view">
+
+        <!-- SECTION 1: HERO / PORTADA IMPACTO VISUAL -->
+        <section id="inicio"
+            class="relative min-h-[600px] lg:min-h-[700px] flex items-center justify-center overflow-hidden">
+            <!-- Background Simulated Panoramic Video / Slider -->
+            <div class="absolute inset-0 z-0">
+                <video src="video.mp4" autoplay muted loop playsinline class="w-full h-full object-cover duration-[10000ms]"></video>
+                <!-- <img src="https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1920&q=80"
+                    alt="Panorámica de Baruta" class="w-full h-full object-cover animate-pulse duration-[10000ms]"> -->
+                <div class="absolute inset-0 hero-gradient"></div>
+            </div>
+
+            <div
+                class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center lg:text-left text-white grid lg:grid-cols-12 gap-8 items-center">
+
+                <div class="lg:col-span-7 space-y-6">
+                    <h1
+                        class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight font-heading leading-tight">
+                        Una Baruta Moderna, <span class="text-baruta-naturaleza">Segura y Humana</span>
+                    </h1>
+
+                    <p class="text-lg sm:text-xl text-gray-200 max-w-2xl font-light">
+                        Trámites más rápidos, espacios públicos recuperados y atención médica directa para el bienestar
+                        de todos los baruteños.
+                    </p>
+
+                    <!-- Action Buttons Carousel / Quick Access -->
+                    <div class="pt-4 flex flex-wrap gap-4 justify-center lg:justify-start">
+                        <a href="#tramites"
+                            class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-7 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fa-solid fa-laptop-code text-lg"></i> Pagar Impuestos & Trámites
+                        </a>
+                        
+                        <a href="#seguridad"
+                            class="bg-red-600/90 hover:bg-red-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved"></i> PoliBaruta 24/7
+                        </a>
+                    </div>
+
+                    <!-- Floating Video Reel Badge -->
+                    <div class="pt-6 flex items-center gap-4 justify-center lg:justify-start text-xs text-gray-300">
+                       
+                       
+                        <span class="flex items-center gap-1.5"><i
+                                class="fa-solid fa-users text-baruta-naturaleza text-base"></i> +120 mil Vecinos
+                            Atendidos</span>
+                    </div>
+                </div>
+
+                <!-- Quick Services Box (Floating Right) -->
+                <div class="lg:col-span-5">
+                    <div
+                        class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-2xl text-baruta-oscuro border border-white">
+                        <div class="flex items-center justify-between mb-4 border-b pb-3">
+                            <h3
+                                class="font-heading font-bold text-lg text-baruta-institucional flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-baruta-naturaleza"></i> Accesos Rápidos Frecuentes
+                            </h3>
+                            <span
+                                class="text-xs bg-baruta-claro text-baruta-institucional font-bold px-2.5 py-1 rounded-full">Servicios
+                                24/7</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-left">
+                            <a href="#tramites"
+                                class="p-3 rounded-xl bg-baruta-calido hover:bg-baruta-claro transition border border-gray-100 flex items-start gap-3 group">
+                                <div
+                                    class="p-2 rounded-lg bg-emerald-100 text-baruta-institucional group-hover:bg-baruta-institucional group-hover:text-white transition">
+                                    <i class="fa-solid fa-calculator"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs">Impuestos SEMAT</h4>
+                                    <p class="text-[11px] text-gray-500">Pagos en línea</p>
+                                </div>
+                            </a>
+
+                            <a href="#tramites"
+                                class="p-3 rounded-xl bg-baruta-calido hover:bg-baruta-claro transition border border-gray-100 flex items-start gap-3 group">
+                                <div
+                                    class="p-2 rounded-lg bg-emerald-100 text-baruta-institucional group-hover:bg-baruta-institucional group-hover:text-white transition">
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs">Catastro</h4>
+                                    <p class="text-[11px] text-gray-500">Citas y Planos</p>
+                                </div>
+                            </a>
+
+                            <a href="#baruta-social"
+                                class="p-3 rounded-xl bg-baruta-calido hover:bg-baruta-claro transition border border-gray-100 flex items-start gap-3 group">
+                                <div
+                                    class="p-2 rounded-lg bg-emerald-100 text-baruta-institucional group-hover:bg-baruta-institucional group-hover:text-white transition">
+                                    <i class="fa-solid fa-user-doctor"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs">Jornadas Salud</h4>
+                                    <p class="text-[11px] text-gray-500">Citas SaludBaruta</p>
+                                </div>
+                            </a>
+
+                            <a href="#transforma"
+                                class="p-3 rounded-xl bg-baruta-calido hover:bg-baruta-claro transition border border-gray-100 flex items-start gap-3 group">
+                                <div
+                                    class="p-2 rounded-lg bg-emerald-100 text-baruta-institucional group-hover:bg-baruta-institucional group-hover:text-white transition">
+                                    <i class="fa-solid fa-dumpster"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs">Aseo Urbano</h4>
+                                    <p class="text-[11px] text-gray-500">Rutas de Recolección</p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <!-- Live Notification Pill -->
+                        <div
+                            class="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-check text-baruta-naturaleza text-base"></i>
+                                <span class="text-gray-700 font-medium">Próxima Jornada: <strong>Las Mercedes (Plaza
+                                        Alfredo Sadel)</strong></span>
+                            </div>
+                            <span class="text-baruta-institucional font-bold">Mañana</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- INTEGRATED ELEMENT: BARUTA EN CIFRAS (Animated Counters) -->
+        <section id="baruta-cifras"
+            class="bg-baruta-institucional text-white py-14 border-t-4 border-baruta-naturaleza relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                    <div>
+                        <span
+                            class="inline-flex items-center gap-1.5 text-baruta-naturaleza font-bold text-xs uppercase tracking-widest mb-1">
+                            <i class="fa-solid fa-chart-line"></i> Transparencia y Resultados
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold font-heading">Baruta en Cifras</h2>
+                        <p class="text-baruta-claro text-sm mt-1">Indicadores auditados de obras, servicios, jornadas
+                            médicas y atención ciudadana.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="text-xs text-baruta-claro bg-white/10 px-3.5 py-2 rounded-full border border-white/20">
+                            <i class="fa-regular fa-calendar-check mr-1 text-baruta-naturaleza"></i> Actualizado:
+                            Noviembre 2026
+                        </div>
+                        <button onclick="replayCounters()" title="Volver a animar cifras"
+                            class="text-xs bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-3.5 py-2 rounded-full transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Recalcular</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                    <!-- Cifra 1 -->
+                    <div class="cifra-card bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/15 hover:border-baruta-naturaleza hover:bg-white/15 group"
+                        style="transition-delay: 0ms;">
+                        <div
+                            class="w-11 h-11 rounded-xl bg-baruta-naturaleza/20 text-baruta-naturaleza flex items-center justify-center text-xl mx-auto mb-3 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <div class="text-3xl sm:text-4xl font-black text-baruta-naturaleza font-heading mb-1 counter"
+                            data-target="4850" data-prefix="+" data-suffix="" data-progress="92">0</div>
+                        <div class="text-xs uppercase font-bold text-gray-100 tracking-wider mb-3">Luminarias LED
+                            Instaladas</div>
+                        <div class="w-full h-1.5 bg-black/25 rounded-full overflow-hidden">
+                            <div class="cifra-progress h-full bg-baruta-naturaleza rounded-full transition-all duration-1000 ease-out"
+                                style="width: 0%;"></div>
+                        </div>
+                        <span class="block text-[11px] text-baruta-claro mt-2">92% de cobertura vial iluminada</span>
+                    </div>
+
+                    <!-- Cifra 2 -->
+                    <div class="cifra-card bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/15 hover:border-baruta-naturaleza hover:bg-white/15 group"
+                        style="transition-delay: 120ms;">
+                        <div
+                            class="w-11 h-11 rounded-xl bg-baruta-naturaleza/20 text-baruta-naturaleza flex items-center justify-center text-xl mx-auto mb-3 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-road"></i>
+                        </div>
+                        <div class="text-3xl sm:text-4xl font-black text-baruta-naturaleza font-heading mb-1 counter"
+                            data-target="14200" data-prefix="+" data-suffix="" data-progress="88">0</div>
+                        <div class="text-xs uppercase font-bold text-gray-100 tracking-wider mb-3">Toneladas Asfalto
+                            Colocadas</div>
+                        <div class="w-full h-1.5 bg-black/25 rounded-full overflow-hidden">
+                            <div class="cifra-progress h-full bg-baruta-naturaleza rounded-full transition-all duration-1000 ease-out"
+                                style="width: 0%;"></div>
+                        </div>
+                        <span class="block text-[11px] text-baruta-claro mt-2">88% de meta anual de vialidad</span>
+                    </div>
+
+                    <!-- Cifra 3 -->
+                    <div class="cifra-card bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/15 hover:border-baruta-naturaleza hover:bg-white/15 group"
+                        style="transition-delay: 240ms;">
+                        <div
+                            class="w-11 h-11 rounded-xl bg-baruta-naturaleza/20 text-baruta-naturaleza flex items-center justify-center text-xl mx-auto mb-3 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <div class="text-3xl sm:text-4xl font-black text-baruta-naturaleza font-heading mb-1 counter"
+                            data-target="42850" data-prefix="+" data-suffix="" data-progress="96">0</div>
+                        <div class="text-xs uppercase font-bold text-gray-100 tracking-wider mb-3">Atenciones Médicas
+                            Gratuitas</div>
+                        <div class="w-full h-1.5 bg-black/25 rounded-full overflow-hidden">
+                            <div class="cifra-progress h-full bg-baruta-naturaleza rounded-full transition-all duration-1000 ease-out"
+                                style="width: 0%;"></div>
+                        </div>
+                        <span class="block text-[11px] text-baruta-claro mt-2">Ambulatorios y clínicas móviles</span>
+                    </div>
+
+                    <!-- Cifra 4 -->
+                    <div class="cifra-card bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/15 hover:border-baruta-naturaleza hover:bg-white/15 group"
+                        style="transition-delay: 360ms;">
+                        <div
+                            class="w-11 h-11 rounded-xl bg-baruta-naturaleza/20 text-baruta-naturaleza flex items-center justify-center text-xl mx-auto mb-3 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-tree-city"></i>
+                        </div>
+                        <div class="text-3xl sm:text-4xl font-black text-baruta-naturaleza font-heading mb-1 counter"
+                            data-target="98" data-prefix="" data-suffix="%" data-progress="98">0</div>
+                        <div class="text-xs uppercase font-bold text-gray-100 tracking-wider mb-3">Efectividad Respuesta
+                            Vecinal</div>
+                        <div class="w-full h-1.5 bg-black/25 rounded-full overflow-hidden">
+                            <div class="cifra-progress h-full bg-baruta-naturaleza rounded-full transition-all duration-1000 ease-out"
+                                style="width: 0%;"></div>
+                        </div>
+                        <span class="block text-[11px] text-baruta-claro mt-2">87 espacios públicos recuperados</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: NOTICIAS Y OPERATIVOS RECIENTES (CAROUSEL 3D CON ARRASTRE + VISTA DETALLE) -->
+        <section id="noticias" class="py-16 bg-white overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                    <div>
+                        <span
+                            class="bg-baruta-claro text-baruta-institucional font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider">Prensa
+                            y Actualidad Municipal</span>
+                        <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-2">Noticias y Operativos
+                            Recientes</h2>
+                        <p class="text-gray-600 text-sm mt-1">Arrastra las tarjetas hacia los lados o usa los controles
+                            para explorar las acciones de gestión.</p>
+                    </div>
+
+                    <!-- Filtros por Categoría -->
+                    <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                        <button onclick="filterCarouselCategory('all', this)"
+                            class="carousel-cat-btn bg-baruta-institucional text-white px-4 py-2 rounded-full shadow transition">Todas</button>
+                        <button onclick="filterCarouselCategory('Salud', this)"
+                            class="carousel-cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">Salud</button>
+                        <button onclick="filterCarouselCategory('Obras', this)"
+                            class="carousel-cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">Obras</button>
+                        <button onclick="filterCarouselCategory('Seguridad', this)"
+                            class="carousel-cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">Seguridad</button>
+                        <button onclick="filterCarouselCategory('Comunidad', this)"
+                            class="carousel-cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">Comunidad</button>
+                    </div>
+                </div>
+
+                <!-- Carousel 3D Interactivo con Arrastre -->
+                <div class="relative py-4">
+                    <!-- Botón Anterior -->
+                    <button onclick="moveCarousel(-1)" aria-label="Noticia anterior"
+                        class="hidden sm:flex absolute left-0 lg:left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/95 hover:bg-baruta-institucional text-baruta-institucional hover:text-white shadow-xl border border-gray-200 items-center justify-center transition transform hover:scale-105">
+                        <i class="fa-solid fa-chevron-left text-base"></i>
+                    </button>
+
+                    <!-- Viewport 3D Draggable -->
+                    <div id="news-carousel-viewport" class="carousel-3d-viewport w-full py-4">
+                        <div id="news-carousel-stage" class="carousel-3d-stage w-full">
+                            <!-- Renderizado dinámico por JS -->
+                        </div>
+                    </div>
+
+                    <!-- Botón Siguiente -->
+                    <button onclick="moveCarousel(1)" aria-label="Siguiente noticia"
+                        class="hidden sm:flex absolute right-0 lg:right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/95 hover:bg-baruta-institucional text-baruta-institucional hover:text-white shadow-xl border border-gray-200 items-center justify-center transition transform hover:scale-105">
+                        <i class="fa-solid fa-chevron-right text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Indicadores y Sugerencia de Arrastre -->
+                <div class="mt-4 flex flex-col items-center gap-3">
+                    <div id="carousel-dots" class="flex items-center justify-center gap-2"></div>
+                    <span class="text-xs text-gray-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-hand-pointer text-baruta-naturaleza"></i> Arrastra con el ratón o desliza
+                        con el dedo para rotar las noticias
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA DE PÁGINA COMPLETA: DETALLE DE NOTICIA ("LEER MÁS") -->
+        <div id="news-detail-page" class="fixed inset-0 bg-baruta-calido z-50 hidden overflow-y-auto">
+            <!-- Barra superior fija del lector -->
+            <div class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+                <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+                    <button onclick="closeNewsDetail()"
+                        class="inline-flex items-center gap-2 bg-baruta-institucional hover:bg-baruta-oscuro text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow">
+                        <i class="fa-solid fa-arrow-left"></i> Volver al Portal de Baruta
+                    </button>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span class="hidden sm:inline font-semibold text-baruta-institucional">Prensa Oficial Alcaldía
+                            de Baruta</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido del Artículo -->
+            <article class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="relative h-72 sm:h-96">
+                        <img id="detail-news-img" src="" alt="Noticia Baruta" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+                        <div class="absolute bottom-6 left-6 right-6 text-white">
+                            <span id="detail-news-cat"
+                                class="inline-block bg-baruta-naturaleza text-white text-xs font-bold px-3.5 py-1 rounded-full uppercase tracking-wider mb-3">Categoría</span>
+                            <h1 id="detail-news-title"
+                                class="font-heading font-extrabold text-2xl sm:text-4xl leading-tight">Título de la
+                                Noticia</h1>
+                        </div>
+                    </div>
+
+                    <div class="p-6 sm:p-10 space-y-6">
+                        <!-- Metadatos -->
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-100 text-xs text-gray-500 font-medium">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <span><i class="fa-regular fa-calendar text-baruta-naturaleza mr-1.5"></i> <strong
+                                        id="detail-news-date">Fecha</strong></span>
+                                <span><i class="fa-solid fa-building-columns text-baruta-naturaleza mr-1.5"></i> <span
+                                        id="detail-news-dept">Dirección Municipal</span></span>
+                                <span><i class="fa-regular fa-clock text-baruta-naturaleza mr-1.5"></i> <span
+                                        id="detail-news-read">3 min de lectura</span></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="copyArticleLink()"
+                                    class="bg-baruta-calido hover:bg-baruta-claro text-baruta-institucional font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-share-nodes"></i> Compartir enlace
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Entradilla -->
+                        <p id="detail-news-lead" class="text-lg font-semibold text-baruta-oscuro leading-relaxed"></p>
+
+                        <!-- Cuerpo del artículo -->
+                        <div id="detail-news-body" class="space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed">
+                        </div>
+
+                        <!-- Cita Institucional Destacada -->
+                        <blockquote class="bg-baruta-calido border-l-4 border-baruta-naturaleza p-6 rounded-r-2xl my-6">
+                            <p id="detail-news-quote"
+                                class="italic text-baruta-oscuro font-medium text-sm sm:text-base mb-2"></p>
+                            <footer id="detail-news-quote-author"
+                                class="text-xs font-bold text-baruta-institucional uppercase tracking-wider"></footer>
+                        </blockquote>
+
+                        <!-- Métricas de Impacto del Operativo -->
+                        <div id="detail-news-metrics"
+                            class="grid grid-cols-3 gap-4 bg-baruta-institucional text-white p-5 rounded-2xl text-center">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Noticias Relacionadas -->
+                <div class="mt-10">
+                    <h3 class="font-heading font-extrabold text-xl text-baruta-oscuro mb-4">Otras Noticias de Interés
+                        Vecinal</h3>
+                    <div id="detail-related-news" class="grid sm:grid-cols-2 gap-6"></div>
+                </div>
+            </article>
+        </div>
+
+        <!-- SECTION 2: LA ALCALDÍA -->
+        <section id="alcaldia" class="py-16 bg-baruta-calido border-t border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span class="text-baruta-naturaleza font-bold text-sm uppercase tracking-wider">Institucional</span>
+                    <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-1">La Alcaldía de Baruta</h2>
+                    <p class="text-gray-600 mt-2">Comprometidos con la transparencia, la eficiencia operativa y el
+                        desarrollo sustentable del municipio.</p>
+                </div>
+
+                <div class="grid lg:grid-cols-12 gap-8 items-center mb-12">
+                    <!-- Mayor Bio Card -->
+                    <div
+                        class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
+                        <img src="darwin.jpg"
+                            alt="Alcalde de Baruta"
+                            class="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-baruta-claro mb-4">
+                        <span
+                            class="bg-baruta-claro text-baruta-institucional font-bold text-xs px-3 py-1 rounded-full mb-2">Alcalde
+                            del Municipio Baruta</span>
+                        <h3 class="font-heading font-extrabold text-2xl text-baruta-oscuro">Darwin González</h3>
+                        <p class="text-xs text-gray-500 mb-4">Gestión 2021 - 2025 / Continuidad 2026</p>
+                        <p class="text-sm text-gray-600 italic mb-4">
+                            "Trabajamos día a día en la calle junto a nuestros vecinos para hacer de Baruta la
+                            referencia de calidad de vida y seguridad en toda Venezuela."
+                        </p>
+                        <div class="flex gap-3 text-baruta-institucional">
+                            <a href="#"
+                                class="w-8 h-8 rounded-full bg-baruta-calido flex items-center justify-center hover:bg-baruta-institucional hover:text-white transition"><i
+                                    class="fa-brands fa-x-twitter"></i></a>
+                            <a href="#"
+                                class="w-8 h-8 rounded-full bg-baruta-calido flex items-center justify-center hover:bg-baruta-institucional hover:text-white transition"><i
+                                    class="fa-brands fa-instagram"></i></a>
+                            <a href="#"
+                                class="w-8 h-8 rounded-full bg-baruta-calido flex items-center justify-center hover:bg-baruta-institucional hover:text-white transition"><i
+                                    class="fa-brands fa-facebook-f"></i></a>
+                        </div>
+                    </div>
+
+                    <!-- Mission & Values Grid -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                            <h4
+                                class="font-heading font-bold text-lg text-baruta-institucional flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-bullseye text-baruta-naturaleza"></i> Misión
+                            </h4>
+                            <p class="text-sm text-gray-600">
+                                Garantizar servicios públicos eficientes, seguridad integral y planes sociales
+                                inclusivos, promoviendo la participación ciudadana activa para consolidar el bienestar
+                                colectivo de todas las parroquias.
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                            <h4
+                                class="font-heading font-bold text-lg text-baruta-institucional flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-eye text-baruta-naturaleza"></i> Visión
+                            </h4>
+                            <p class="text-sm text-gray-600">
+                                Ser el municipio modelo en Venezuela por su innovación tecnológica en trámites,
+                                sustentabilidad ambiental, infraestructura moderna y altos estándares de seguridad
+                                ciudadana.
+                            </p>
+                        </div>
+
+                        <!-- Interactive Executive Organigram Trigger -->
+                        <div
+                            class="bg-gradient-to-r from-baruta-institucional to-baruta-oscuro p-6 rounded-2xl shadow-md text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div>
+                                <h4 class="font-heading font-bold text-lg">Organigrama y Direcciones</h4>
+                                <p class="text-xs text-baruta-claro">Conoce las dependencias municipales y sus
+                                    directores responsables.</p>
+                            </div>
+                            <button onclick="openModal('modal-organigrama')"
+                                class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition shadow shrink-0">
+                                Ver Organigrama Interactivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: BARUTA SOCIAL (CON FOTOGRAFÍAS REALES Y DATOS DE CONTACTO POR CENTRO) -->
+        <section id="baruta-social" class="py-16 bg-baruta-calido border-t border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span
+                        class="bg-emerald-100 text-baruta-institucional font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider">Desarrollo
+                        Humano</span>
+                    <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-2">Baruta Social</h2>
+                    <p class="text-gray-600 mt-2">Programas integrales dedicados a proteger y mejorar la calidad de
+                        vida. Contacta directamente a nuestros centros de atención.</p>
+                </div>
+
+                <!-- Social Programs Grid con Imágenes Reales y Contactos Integrados -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <!-- Program 1 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?auto=format&fit=crop&w=700&q=80"
+                                    alt="Atención al Adulto Mayor Baruta"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-baruta-institucional text-white px-3 py-1 rounded-full uppercase shadow">Casa
+                                    del Abuelo</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Atención al Adulto
+                                    Mayor</h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Casas del abuelo, terapias ocupacionales, actividades recreativas, apoyo nutricional
+                                    y entrega de medicinas para la tercera edad.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 945-1234</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong> adultomayor@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Casa del Abuelo, Av. Principal de Bello Monte.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program 2 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=700&q=80"
+                                    alt="Niñez y Adolescencia Baruta"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-baruta-naturaleza text-white px-3 py-1 rounded-full uppercase shadow">CMDNNAB</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Niñez y Adolescencia
+                                </h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Protección integral de derechos, defensorías comunitarias, orientación familiar y
+                                    talleres pedagógicos y culturales.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 903-8400</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong> cmdnna@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Sede Municipal, Nivel Mezzanina, Las Mercedes.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program 3 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=700&q=80"
+                                    alt="Jornadas Médicas SaludBaruta"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-emerald-700 text-white px-3 py-1 rounded-full uppercase shadow">SaludBaruta</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Jornadas Médicas y
+                                    Salud</h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Red de ambulatorios con medicina general, pediatría, despistaje de hipertensión,
+                                    odontología y clínicas móviles.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 943-5521</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong> salud@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Ambulatorio Central Bello Monte, Calle Caroní.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program 4 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1573497620053-ea5300f94f21?auto=format&fit=crop&w=700&q=80"
+                                    alt="Atención a Personas con Discapacidad"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-teal-700 text-white px-3 py-1 rounded-full uppercase shadow">Baruta
+                                    Inclusiva</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Atención a
+                                    Discapacidad</h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Entrega de ayudas técnicas (sillas de ruedas, bastones, andaderas), rehabilitación
+                                    física e inclusión laboral.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 903-8550</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong>
+                                        inclusionsocial@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Módulo de Atención Social, Edif. Alcaldía.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program 5 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=700&q=80"
+                                    alt="Deportes y Recreación Baruta"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-amber-600 text-white px-3 py-1 rounded-full uppercase shadow">Deportes
+                                    Baruta</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Deporte y Recreación
+                                </h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Escuelas deportivas municipales gratuitas, bailoterapia comunitaria,
+                                    acondicionamiento físico y torneos vecinales.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 941-7788</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong> deportes@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Polideportivo Rafael Vidal, La Trinidad.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program 6 -->
+                    <div
+                        class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between group">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=700&q=80"
+                                    alt="Alimentación y Apoyo a Familias"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span
+                                    class="absolute top-3 left-3 text-[10px] font-bold bg-rose-600 text-white px-3 py-1 rounded-full uppercase shadow">Bienestar
+                                    Social</span>
+                            </div>
+                            <div class="p-6 pb-2">
+                                <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Alimentación y
+                                    Familias</h3>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Atención social directa a familias vulnerables, entrega de bolsas nutricionales y
+                                    ferias agrícolas comunitarias.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6">
+                            <div
+                                class="pt-3 border-t border-gray-100 space-y-2 text-xs text-gray-600 bg-baruta-calido/70 p-3.5 rounded-xl">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-phone text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Teléfono:</strong> (0212) 903-8588</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-envelope text-baruta-naturaleza mt-0.5"></i>
+                                    <span class="break-all"><strong>Correo:</strong>
+                                        desarrollohumano@baruta.gob.ve</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-baruta-naturaleza mt-0.5"></i>
+                                    <span><strong>Centro:</strong> Oficina de Atención Social, Minas de Baruta.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: TESTIMONIO DE LA COMUNIDAD A PANTALLA COMPLETA (100% WIDTH VIDEO SIN TÍTULO DE SECCIÓN) -->
+        <section id="testimonio-video" class="relative w-full min-h-[820px] flex items-end justify-center overflow-hidden my-0">
+            <!-- Video HTML5 con reproducción automática al entrar en la sección -->
+            <video muted playsinline controls class="absolute inset-0 w-full h-full object-cover">
+                <source src="seccion.mp4" type="video/mp4">
+                Tu navegador no soporta la reproducción de videos.
+            </video>
+
+            <!-- Overlay Gradiente Suave Inferior para Legibilidad -->
+            <div
+                class="absolute inset-0 bg-gradient-to-t from-baruta-oscuro/95 via-baruta-oscuro/35 to-transparent z-10 pointer-events-none">
+            </div>
+
+            <!-- Ficha Única de la Vecina Beneficiaria -->
+            <!-- <div class="relative z-20 max-w-4xl w-full mx-auto px-4 pb-12 pt-24">
+                <div
+                    class="bg-baruta-oscuro/80 backdrop-blur-md border border-white/20 rounded-3xl p-6 sm:p-8 text-white shadow-2xl flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                    <div
+                        class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-baruta-naturaleza overflow-hidden shadow-lg shrink-0">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80"
+                            alt="María Teresa Mendoza" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-center sm:text-left">
+                        <p class="text-base sm:text-lg font-medium text-baruta-calido leading-relaxed mb-3">
+                            "Gracias a las clínicas móviles de SaludBaruta y a las entregas de medicinas para adultos
+                            mayores, mi mamá recibe atención médica digna directamente en nuestro sector."
+                        </p>
+                        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                            <h4 class="font-heading font-bold text-base text-white">María Teresa Mendoza</h4>
+                            <span class="text-baruta-naturaleza">•</span>
+                            <span class="text-xs text-baruta-claro font-medium">Vecina beneficiaria • Las Minas de
+                                Baruta</span>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+        </section>
+
+        <!-- SECTION 4: SEGURIDAD Y PROTECCIÓN CIUDADANA -->
+        <section id="seguridad" class="py-16 bg-baruta-oscuro text-white relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span
+                        class="bg-red-500/20 text-red-400 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider border border-red-500/30">Respuesta
+                        Inmediata</span>
+                    <h2 class="text-3xl font-extrabold font-heading mt-2">Seguridad y Protección Ciudadana</h2>
+                    <p class="text-gray-300 mt-2">Un equipo multidisciplinario velando por la paz, el orden y la
+                        prevención en nuestro municipio.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- PoliBaruta Card -->
+                    <div
+                        class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-baruta-naturaleza transition">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-3xl mb-6 shadow-lg">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="font-heading font-bold text-xl mb-3">PoliBaruta</h3>
+                        <p class="text-gray-300 text-sm mb-6">
+                            Patrullaje constante por cuadrantes, centro de monitoreo de cámaras e inteligencia
+                            preventiva comunitaria.
+                        </p>
+                        <div class="space-y-2">
+                            <a href="tel:02129038511"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-phone"></i> Llama a Central (0212) 903-8511
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Protección Civil Card -->
+                    <div
+                        class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-baruta-naturaleza transition">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-3xl mb-6 shadow-lg">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h3 class="font-heading font-bold text-xl mb-3">Protección Civil Baruta</h3>
+                        <p class="text-gray-300 text-sm mb-6">
+                            Atención ante lluvias, monitoreo de quebradas, desmalezamiento preventivo y gestión de
+                            riesgos naturales.
+                        </p>
+                        <div class="space-y-2">
+                            <a href="tel:171"
+                                class="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-phone"></i> Emergencias 171
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Prevención y Educación Vial -->
+                    <div
+                        class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-baruta-naturaleza transition">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-baruta-naturaleza text-white flex items-center justify-center text-3xl mb-6 shadow-lg">
+                            <i class="fa-solid fa-traffic-light"></i>
+                        </div>
+                        <h3 class="font-heading font-bold text-xl mb-3">Vialidad y Tránsito</h3>
+                        <p class="text-gray-300 text-sm mb-6">
+                            Fiscalización de tráfico, asistencia vial con grúas gratuitas en arterias principales y
+                            educación vial vecinal.
+                        </p>
+                        <div class="space-y-2">
+                            <button onclick="openModal('modal-reporte')"
+                                class="w-full bg-baruta-naturaleza hover:bg-emerald-600 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-truck-pickup"></i> Solicitar Asistencia Vial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Quick Hotline Banner -->
+                <div
+                    class="mt-12 bg-gradient-to-r from-red-900/80 to-red-800/80 p-6 rounded-2xl border border-red-500/30 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl animate-pulse">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-heading font-bold text-lg">¿Tienes una emergencia vial o médica ahora mismo?
+                            </h4>
+                            <p class="text-xs text-gray-200">Líneas de atención inmediata habilitadas las 24 horas, los
+                                365 días del año.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <a href="tel:02129038511"
+                            class="bg-white text-red-900 font-extrabold px-5 py-2.5 rounded-xl text-xs hover:bg-gray-100 transition shadow">
+                            Llamar a PoliBaruta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: BARUTA SE TRANSFORMA -->
+        <section id="transforma" class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span
+                        class="bg-baruta-claro text-baruta-institucional font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider">Obras
+                        Urbanas</span>
+                    <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-2">Baruta se Transforma</h2>
+                    <p class="text-gray-600 mt-2">Recuperación continua de parques, asfaltado integral, alumbrado LED y
+                        ornato público en el municipio.</p>
+                </div>
+
+                <!-- Before / After Interactive Component -->
+                <div class="grid lg:grid-cols-12 gap-8 items-center mb-16">
+                    <div class="lg:col-span-7">
+                        <div class="bg-baruta-calido p-4 rounded-3xl border border-gray-200 shadow-md">
+                            <div class="flex items-center justify-between mb-3 px-2">
+                                <span class="text-xs font-bold text-baruta-institucional uppercase tracking-wider"><i
+                                        class="fa-solid fa-sliders mr-1"></i> Desliza para comparar el cambio</span>
+                                <span
+                                    class="text-xs bg-baruta-naturaleza text-white font-bold px-2.5 py-0.5 rounded-full">Plaza
+                                    El Capanaparo</span>
+                            </div>
+
+                            <!-- Slider container -->
+                            <div id="ba-slider" class="ba-slider-container shadow-inner">
+                                <!-- AFTER IMAGE (Background) -->
+                                <div class="ba-image-before"
+                                    style="background-image: url('despues.png');">
+                                    <span
+                                        class="absolute top-4 right-4 bg-baruta-naturaleza text-white font-bold text-xs px-3 py-1 rounded-full shadow">DESPUÉS
+                                        (Recuperado)</span>
+                                </div>
+                                <!-- BEFORE IMAGE (Clipped on top) -->
+                                <div id="ba-after-layer" class="ba-image-after"
+                                    style="background-image: url('antes.png');">
+                                    <span
+                                        class="absolute top-4 left-4 bg-gray-900/80 text-white font-bold text-xs px-3 py-1 rounded-full shadow">ANTES</span>
+                                </div>
+                                <!-- Slider Separator Line -->
+                                <div id="ba-bar" class="ba-slider-bar">
+                                    <div class="ba-handle">
+                                        <i class="fa-solid fa-arrows-left-right text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-4">
+                        <h3 class="font-heading font-extrabold text-2xl text-baruta-oscuro">Transformación Visual de
+                            Espacios Públicos</h3>
+                        <p class="text-gray-600 text-sm">
+                            Mediante el plan integral de mantenimiento urbano, reacondicionamos caminerías, iluminación,
+                            áreas verdes y mobiliario urbano para el disfrute de la familia baruteña.
+                        </p>
+
+                        <div class="space-y-3 pt-2">
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-baruta-calido border border-gray-100">
+                                <i class="fa-solid fa-road text-baruta-naturaleza text-lg mt-0.5"></i>
+                                <div>
+                                    <h4 class="font-bold text-xs text-baruta-oscuro">Plan Asfaltado Continuo</h4>
+                                    <p class="text-xs text-gray-500">Rehabilitación de vías principales en Las Mercedes,
+                                        Prados del Este y San Román.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-baruta-calido border border-gray-100">
+                                <i class="fa-solid fa-tree text-baruta-naturaleza text-lg mt-0.5"></i>
+                                <div>
+                                    <h4 class="font-bold text-xs text-baruta-oscuro">Mantenimiento Ambiental</h4>
+                                    <p class="text-xs text-gray-500">Poda fitosanitaria y desmalezamiento de parques y
+                                        avenidas.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-baruta-calido border border-gray-100">
+                                <i class="fa-solid fa-lightbulb text-baruta-naturaleza text-lg mt-0.5"></i>
+                                <div>
+                                    <h4 class="font-bold text-xs text-baruta-oscuro">Alumbrado Inteligente LED</h4>
+                                    <p class="text-xs text-gray-500">Sustitución de focos incandescentes por tecnología
+                                        LED de bajo consumo.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTEGRATED MAP: MAPA DE ACCIONES MUNICIPALES -->
+                <div class="bg-baruta-calido p-6 rounded-3xl border border-gray-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h3 class="font-heading font-bold text-xl text-baruta-oscuro">Mapa Interactivo de Acciones
+                                Municipales</h3>
+                            <p class="text-xs text-gray-500">Ubica las obras en ejecución, puntos de salud y módulos de
+                                seguridad en Baruta.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <button onclick="filterMap('all')"
+                                class="bg-baruta-institucional text-white px-3 py-1.5 rounded-lg font-bold">Todos</button>
+                            <button onclick="filterMap('obras')"
+                                class="bg-white border text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-100">Obras</button>
+                            <button onclick="filterMap('salud')"
+                                class="bg-white border text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-100">Salud</button>
+                            <button onclick="filterMap('seguridad')"
+                                class="bg-white border text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-100">Seguridad</button>
+                        </div>
+                    </div>
+
+                    <!-- Leaflet Container -->
+                    <div id="baruta-map" class="shadow-inner border border-gray-300"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: TRÁMITES Y SERVICIOS -->
+        <section id="tramites" class="py-16 bg-baruta-calido border-t border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span
+                        class="bg-baruta-naturaleza text-white font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider">Gestión
+                        Digital</span>
+                    <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-2">Trámites y Servicios en
+                        Línea</h2>
+                    <p class="text-gray-600 mt-2">Realiza tus gestiones municipales de forma rápida, segura y desde la
+                        comodidad de tu hogar.</p>
+                </div>
+
+                <!-- Tabbed Interface for Online Services -->
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="flex border-b border-gray-200 overflow-x-auto bg-gray-50">
+                        <button onclick="switchTab('impuestos')" id="tab-btn-impuestos"
+                            class="tab-btn active px-6 py-4 font-bold text-sm text-baruta-institucional border-b-2 border-baruta-institucional bg-white flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-calculator text-baruta-naturaleza"></i> Impuestos SEMAT
+                        </button>
+                        <button onclick="switchTab('catastro')" id="tab-btn-catastro"
+                            class="tab-btn px-6 py-4 font-bold text-sm text-gray-500 hover:text-baruta-institucional flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-map"></i> Catastro y Fichas
+                        </button>
+                        <button onclick="switchTab('licencias')" id="tab-btn-licencias"
+                            class="tab-btn px-6 py-4 font-bold text-sm text-gray-500 hover:text-baruta-institucional flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-id-card"></i> Licencias de Actividades
+                        </button>
+                        <button onclick="switchTab('solicitudes')" id="tab-btn-solicitudes"
+                            class="tab-btn px-6 py-4 font-bold text-sm text-gray-500 hover:text-baruta-institucional flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-magnifying-glass font-bold"></i> Consultar Solicitud
+                        </button>
+                    </div>
+
+                    <div class="p-8">
+                        <!-- Tab Content: Impuestos -->
+                        <div id="tab-impuestos" class="tab-content">
+                            <div class="grid md:grid-cols-2 gap-8 items-center">
+                                <div>
+                                    <h3 class="font-heading font-bold text-xl text-baruta-oscuro mb-3">Servicio de
+                                        Administración Tributaria (SEMAT)</h3>
+                                    <p class="text-gray-600 text-sm mb-6">
+                                        Consulta tu estado de cuenta de inmuebles urbanos, vehículos y actividades
+                                        económicas sin necesidad de hacer filas.
+                                    </p>
+                                    <form onsubmit="event.preventDefault(); simulateSearch();" class="space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cédula
+                                                de Identidad o RIF</label>
+                                            <input type="text" placeholder="Ej. J-12345678-0" required
+                                                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-baruta-institucional text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Número
+                                                de Cuenta Impuesto</label>
+                                            <input type="text" placeholder="Ej. CTA-884920" required
+                                                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-baruta-institucional text-sm">
+                                        </div>
+                                        <button type="submit"
+                                            class="w-full bg-baruta-institucional hover:bg-baruta-oscuro text-white font-bold py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm">
+                                            <i class="fa-solid fa-search"></i> Consultar Deuda y Pagar
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="bg-baruta-calido p-6 rounded-2xl border border-gray-200 text-center">
+                                    <div
+                                        class="w-16 h-16 bg-baruta-claro text-baruta-institucional rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </div>
+                                    <h4 class="font-bold text-baruta-oscuro mb-2">Formularios y Requisitos Descargables
+                                    </h4>
+                                    <p class="text-xs text-gray-500 mb-4">Descarga las planillas oficiales para
+                                        solvencias tributarias y declaraciones juradas.</p>
+                                    <a href="#"
+                                        class="inline-flex items-center gap-2 text-xs font-bold bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                                        <i class="fa-solid fa-download"></i> Descargar Planilla Única PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Catastro (Hidden by default) -->
+                        <div id="tab-catastro" class="tab-content hidden">
+                            <div class="max-w-2xl mx-auto text-center space-y-4">
+                                <h3 class="font-heading font-bold text-xl text-baruta-oscuro">Solicitud de Ficha
+                                    Catastral y Planos</h3>
+                                <p class="text-sm text-gray-600">
+                                    Inicia la tramitación de cédula catastral, empadronamiento o rectificación de
+                                    linderos digitalmente.
+                                </p>
+                                <div class="pt-4 flex justify-center gap-4">
+                                    <button
+                                        onclick="showToastNotification('Redirigiendo a la plataforma digital de Catastro...')"
+                                        class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow">
+                                        Nueva Cédula Catastral
+                                    </button>
+                                    <button
+                                        onclick="showToastNotification('Abriendo consulta de expedientes de Catastro...')"
+                                        class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-6 py-3 rounded-xl text-sm transition">
+                                        Consultar Expediente
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Licencias -->
+                        <div id="tab-licencias" class="tab-content hidden">
+                            <div class="max-w-2xl mx-auto text-center space-y-4">
+                                <h3 class="font-heading font-bold text-xl text-baruta-oscuro">Licencia de Actividades
+                                    Económicas y Licores</h3>
+                                <p class="text-sm text-gray-600">
+                                    Proceso simplificado para nuevos emprendedores y comercios en el municipio Baruta.
+                                </p>
+                                <div class="grid sm:grid-cols-2 gap-4 text-left pt-4">
+                                    <div class="p-4 rounded-xl border border-gray-200 bg-baruta-calido">
+                                        <h4 class="font-bold text-sm text-baruta-institucional">Requisitos Nuevos
+                                            Comercios</h4>
+                                        <p class="text-xs text-gray-500 mt-1">Uso de suelo, solvencia municipal y
+                                            bomberos.</p>
+                                    </div>
+                                    <div class="p-4 rounded-xl border border-gray-200 bg-baruta-calido">
+                                        <h4 class="font-bold text-sm text-baruta-institucional">Renovación Anual</h4>
+                                        <p class="text-xs text-gray-500 mt-1">Renueva tu licencia comercial 100% online.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Consultar Solicitud -->
+                        <div id="tab-solicitudes" class="tab-content hidden">
+                            <div class="max-w-lg mx-auto text-center space-y-4">
+                                <h3 class="font-heading font-bold text-xl text-baruta-oscuro">Seguimiento de Expediente
+                                    Ciudadano</h3>
+                                <p class="text-xs text-gray-500">Ingresa tu número de solicitud (RPT-XXXX) para conocer
+                                    el estado actual de tu gestión.</p>
+                                <div class="flex gap-2">
+                                    <input type="text" placeholder="Ej. RPT-2026-9942"
+                                        class="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-baruta-institucional">
+                                    <button
+                                        onclick="showToastNotification('Solicitud RPT-2026-9942: EN PROCESO DE REVISIÓN EN CATASTRO.')"
+                                        class="bg-baruta-institucional text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-baruta-oscuro">Consultar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AGENDA MUNICIPAL BARUTA CON CALENDARIO INTERACTIVO DE EVENTOS -->
+        <section id="agenda" class="py-16 bg-white border-t border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                    <div>
+                        <span class="text-baruta-naturaleza font-bold text-xs uppercase tracking-wider">Planificación
+                            Vecinal</span>
+                        <h2 class="text-3xl font-extrabold text-baruta-oscuro font-heading mt-1">Agenda Municipal y
+                            Calendario</h2>
+                        <p class="text-gray-600 text-sm mt-1">Consulta los operativos, jornadas y eventos culturales
+                            programados en el municipio.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center gap-1.5 text-xs text-gray-600 font-semibold">
+                            <span class="w-3 h-3 rounded-full bg-baruta-institucional"></span> Salud
+                        </span>
+                        <span class="flex items-center gap-1.5 text-xs text-gray-600 font-semibold">
+                            <span class="w-3 h-3 rounded-full bg-purple-600"></span> Cultura
+                        </span>
+                        <span class="flex items-center gap-1.5 text-xs text-gray-600 font-semibold">
+                            <span class="w-3 h-3 rounded-full bg-amber-600"></span> Deportes
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Layout Calendario + Lista de Próximos Eventos -->
+                <div class="grid lg:grid-cols-12 gap-8 items-start">
+
+                    <!-- Calendario Mensual Interactivo (8 Cols) -->
+                    <div class="lg:col-span-8 bg-baruta-calido p-6 rounded-3xl border border-gray-200 shadow-sm">
+                        <!-- Mes y Controles -->
+                        <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                            <h3 class="font-heading font-extrabold text-xl text-baruta-oscuro flex items-center gap-2">
+                                <i class="fa-regular fa-calendar-days text-baruta-naturaleza"></i> Noviembre 2026
+                            </h3>
+                            <div class="flex gap-2">
+                                <button onclick="showToastNotification('Mostrando mes anterior: Octubre 2026')"
+                                    class="w-8 h-8 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button onclick="showToastNotification('Mostrando mes siguiente: Diciembre 2026')"
+                                    class="w-8 h-8 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Encabezados Días de la Semana -->
+                        <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-500 uppercase mb-3">
+                            <div>Dom</div>
+                            <div>Lun</div>
+                            <div>Mar</div>
+                            <div>Mié</div>
+                            <div>Jue</div>
+                            <div>Vie</div>
+                            <div>Sáb</div>
+                        </div>
+
+                        <!-- Días del Mes (Grid 7 Columns) -->
+                        <div class="grid grid-cols-7 gap-2 text-xs">
+                            <!-- Dias mes anterior -->
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">25</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">26</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">27</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">28</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">29</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">30</div>
+                            <div class="h-20 bg-gray-100/50 p-1.5 rounded-xl text-gray-300">31</div>
+
+                            <!-- Dias Noviembre -->
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">1</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">2</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">3</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">4</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">5</div>
+                            <!-- Día 6 (Hoy) -->
+                            <div
+                                class="h-20 bg-emerald-50 p-1.5 rounded-xl border-2 border-baruta-naturaleza font-bold">
+                                <span
+                                    class="inline-block bg-baruta-naturaleza text-white rounded-full w-5 h-5 text-center text-[10px] leading-5">6</span>
+                                <div class="mt-1 bg-baruta-institucional text-white text-[9px] p-1 rounded font-normal truncate cursor-pointer"
+                                    onclick="showEventDetail('Operativo Aseo Especial', 'Hoy 9:00 AM', 'Baruta Pueblo')">
+                                    Aseo Especial
+                                </div>
+                            </div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">7</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">8</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">9</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">10</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">11</div>
+
+                            <!-- Día 12 (Evento Salud) -->
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">
+                                <span>12</span>
+                                <div class="mt-1 bg-baruta-institucional text-white text-[9px] p-1 rounded truncate cursor-pointer"
+                                    onclick="showEventDetail('Jornada Vacunación Infantil', '8:30 AM', 'Plaza Las Mercedes')">
+                                    Vacunación
+                                </div>
+                            </div>
+
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">13</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">14</div>
+
+                            <!-- Día 15 (Evento Cultura) -->
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">
+                                <span>15</span>
+                                <div class="mt-1 bg-purple-600 text-white text-[9px] p-1 rounded truncate cursor-pointer"
+                                    onclick="showEventDetail('Concierto al Aire Libre', '5:00 PM', 'Plaza Alfredo Sadel')">
+                                    Concierto Sadel
+                                </div>
+                            </div>
+
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">16</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">17</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">18</div>
+
+                            <!-- Día 19 (Evento Deportes) -->
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">
+                                <span>19</span>
+                                <div class="mt-1 bg-amber-600 text-white text-[9px] p-1 rounded truncate cursor-pointer"
+                                    onclick="showEventDetail('Caminata 5K Vecinal', '7:00 AM', 'Av. Principal Caurimare')">
+                                    Caminata 5K
+                                </div>
+                            </div>
+
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">20</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">21</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">22</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">23</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">24</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">25</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">26</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">27</div>
+
+                            <!-- Día 28 (Mercado) -->
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">
+                                <span>28</span>
+                                <div class="mt-1 bg-emerald-600 text-white text-[9px] p-1 rounded truncate cursor-pointer"
+                                    onclick="showEventDetail('Mercado a Cielo Abierto', '8:00 AM', 'Manzanares')">
+                                    Mercado Vecinal
+                                </div>
+                            </div>
+
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">29</div>
+                            <div class="h-20 bg-white p-1.5 rounded-xl border border-gray-200">30</div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Lateral de Próximos Eventos (4 Cols) -->
+                    <div class="lg:col-span-4 space-y-4">
+                        <h3 class="font-heading font-bold text-lg text-baruta-oscuro mb-2">Próximos Eventos Destacados
+                        </h3>
+
+                        <div
+                            class="bg-baruta-calido p-5 rounded-2xl border border-gray-200 flex items-start gap-4 hover:shadow-md transition">
+                            <div class="bg-baruta-institucional text-white text-center p-2.5 rounded-xl min-w-[55px]">
+                                <span class="block text-[10px] font-semibold uppercase">NOV</span>
+                                <span class="block text-xl font-black font-heading">12</span>
+                            </div>
+                            <div>
+                                <span
+                                    class="bg-emerald-100 text-baruta-institucional text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Salud</span>
+                                <h4 class="font-heading font-bold text-sm text-baruta-oscuro mt-1">Jornada Vacunación
+                                    Infantil</h4>
+                                <p class="text-xs text-gray-500 mt-1"><i
+                                        class="fa-solid fa-location-dot mr-1 text-red-500"></i> Plaza Las Mercedes</p>
+                                <p class="text-xs text-gray-400 mt-0.5"><i class="fa-regular fa-clock mr-1"></i> 8:30 AM
+                                    - 1:00 PM</p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-baruta-calido p-5 rounded-2xl border border-gray-200 flex items-start gap-4 hover:shadow-md transition">
+                            <div class="bg-purple-600 text-white text-center p-2.5 rounded-xl min-w-[55px]">
+                                <span class="block text-[10px] font-semibold uppercase">NOV</span>
+                                <span class="block text-xl font-black font-heading">15</span>
+                            </div>
+                            <div>
+                                <span
+                                    class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Cultura</span>
+                                <h4 class="font-heading font-bold text-sm text-baruta-oscuro mt-1">Concierto al Aire
+                                    Libre</h4>
+                                <p class="text-xs text-gray-500 mt-1"><i
+                                        class="fa-solid fa-location-dot mr-1 text-red-500"></i> Plaza Alfredo Sadel</p>
+                                <p class="text-xs text-gray-400 mt-0.5"><i class="fa-regular fa-clock mr-1"></i> 5:00 PM
+                                    - 8:00 PM</p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-baruta-calido p-5 rounded-2xl border border-gray-200 flex items-start gap-4 hover:shadow-md transition">
+                            <div class="bg-amber-600 text-white text-center p-2.5 rounded-xl min-w-[55px]">
+                                <span class="block text-[10px] font-semibold uppercase">NOV</span>
+                                <span class="block text-xl font-black font-heading">19</span>
+                            </div>
+                            <div>
+                                <span
+                                    class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Deportes</span>
+                                <h4 class="font-heading font-bold text-sm text-baruta-oscuro mt-1">Caminata 5K Vecinal
+                                </h4>
+                                <p class="text-xs text-gray-500 mt-1"><i
+                                        class="fa-solid fa-location-dot mr-1 text-red-500"></i> Av. Principal de
+                                    Caurimare</p>
+                                <p class="text-xs text-gray-400 mt-0.5"><i class="fa-regular fa-clock mr-1"></i> 7:00 AM
+                                </p>
+                            </div>
+                        </div>
+
+                        <button onclick="alert('Descargando calendario completo de eventos Baruta 2026 en PDF...')"
+                            class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-pdf text-red-600"></i> Descargar Calendario Mensual PDF
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+    <!-- FIN DEL CONTENEDOR PRINCIPAL DEL PORTAL -->
+
+    <!-- VISTA DE PÁGINA COMPLETA: DETALLE DE NOTICIA (SE ACTIVA AL PULSAR "LEER MÁS") -->
+    <section id="news-detail-page" class="hidden min-h-screen bg-baruta-calido pb-20">
+        <!-- Barra superior de regreso -->
+        <div class="bg-white border-b border-gray-200 py-4 sticky top-[117px] z-30 shadow-sm">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3">
+                <button onclick="closeNewsDetail()"
+                    class="inline-flex items-center gap-2 text-baruta-institucional hover:text-baruta-oscuro font-bold text-sm transition group">
+                    <span
+                        class="w-8 h-8 rounded-full bg-baruta-claro group-hover:bg-baruta-institucional group-hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                    </span>
+                    Volver al inicio / Noticias
+                </button>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span>Sala de Prensa Alcaldía de Baruta</span>
+                    <span>•</span>
+                    <span id="detail-breadcrumb-cat" class="font-bold text-baruta-naturaleza uppercase">Gestión</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Artículo Completo -->
+        <article class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Imagen Panorámica Principal -->
+                <div class="relative h-64 sm:h-96 lg:h-[440px] w-full">
+                    <img id="detail-image" src="" alt="Detalle de noticia" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+                    <div class="absolute bottom-6 left-6 right-6 text-white">
+                        <span id="detail-category-badge"
+                            class="inline-block bg-baruta-naturaleza text-white text-xs font-bold px-3.5 py-1 rounded-full uppercase tracking-wider mb-3 shadow">
+                            Categoría
+                        </span>
+                        <h1 id="detail-title" class="font-heading font-extrabold text-2xl sm:text-4xl leading-tight">
+                            Título de la Noticia
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Metadatos y Botones de Compartir -->
+                <div
+                    class="px-6 sm:px-10 py-5 bg-baruta-calido/60 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-600">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <span class="flex items-center gap-1.5 font-semibold text-baruta-oscuro">
+                            <i class="fa-solid fa-building-columns text-baruta-institucional"></i>
+                            <span id="detail-author">Dirección de Comunicaciones</span>
+                        </span>
+                        <span>|</span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-calendar text-baruta-naturaleza"></i>
+                            <span id="detail-date">5 de Noviembre, 2026</span>
+                        </span>
+                        <span>|</span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-clock text-baruta-naturaleza"></i>
+                            <span id="detail-read-time">Lectura 4 min</span>
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-gray-500 mr-1">Compartir:</span>
+                        <button onclick="copyNewsLink()" title="Copiar enlace"
+                            class="w-8 h-8 rounded-full bg-white border border-gray-200 hover:bg-baruta-institucional hover:text-white flex items-center justify-center transition">
+                            <i class="fa-solid fa-link"></i>
+                        </button>
+                        <button onclick="showToast('Compartiendo nota en X (Twitter)...')" title="Compartir en X"
+                            class="w-8 h-8 rounded-full bg-white border border-gray-200 hover:bg-baruta-institucional hover:text-white flex items-center justify-center transition">
+                            <i class="fa-brands fa-x-twitter"></i>
+                        </button>
+                        <button onclick="showToast('Compartiendo nota por WhatsApp...')" title="Compartir en WhatsApp"
+                            class="w-8 h-8 rounded-full bg-white border border-gray-200 hover:bg-baruta-naturaleza hover:text-white flex items-center justify-center transition">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cuerpo Extenso de la Noticia -->
+                <div class="p-6 sm:p-10 space-y-6 text-gray-700 leading-relaxed text-sm sm:text-base">
+                    <p id="detail-lead" class="text-lg sm:text-xl font-semibold text-baruta-oscuro leading-relaxed">
+                        Entrada destacada de la noticia.
+                    </p>
+
+                    <div id="detail-body" class="space-y-5">
+                        <!-- Párrafos y subtítulos generados dinámicamente -->
+                    </div>
+
+                    <!-- Cita Destacada Institucional -->
+                    <blockquote
+                        class="my-8 bg-baruta-claro/50 border-l-4 border-baruta-institucional p-6 rounded-r-2xl">
+                        <p id="detail-quote"
+                            class="font-heading font-bold text-baruta-institucional text-base sm:text-lg italic">
+                            “Cita destacada de la gestión municipal.”
+                        </p>
+                        <footer id="detail-quote-author" class="text-xs text-gray-600 font-semibold mt-2">
+                            — Vocero Oficial, Alcaldía de Baruta
+                        </footer>
+                    </blockquote>
+
+                    <!-- Datos Clave de Impacto -->
+                    <div class="bg-baruta-calido p-6 rounded-2xl border border-gray-200">
+                        <h3 class="font-heading font-bold text-base text-baruta-oscuro mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-baruta-naturaleza"></i> Datos Clave de Impacto
+                        </h3>
+                        <div id="detail-metrics" class="grid sm:grid-cols-3 gap-4">
+                            <!-- Métricas dinámicas -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Noticias Relacionadas -->
+            <button onclick="showToastNotification('Descargando calendario completo de eventos Baruta 2026 en PDF...')"
+                class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-file-pdf text-red-600"></i> Descargar Calendario Mensual PDF
+            </button>
+            </div>
+
+            </div>
+            </div>
+    </section>
+
+    </main>
+    <!-- FIN DEL CONTENEDOR PRINCIPAL DEL PORTAL -->
+
+    <!-- FOOTER INSTITUCIONAL -->
+    <footer class="bg-baruta-oscuro text-white border-t-4 border-baruta-naturaleza pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/10">
+
+                <!-- Col 1: Identity -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-baruta-institucional flex items-center justify-center text-white font-bold">
+                            <svg class="w-6 h-6 text-baruta-naturaleza fill-current" viewBox="0 0 24 24">
+                                <path
+                                    d="M17,8C8,10 5,16 3,21C8,20 15,18 19,13C21.5,10 21.5,5 21.5,5C21.5,5 19.5,6.5 17,8Z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="block font-heading font-black text-xl text-white">BARUTA</span>
+                            <span class="block text-[10px] text-gray-400 uppercase tracking-widest">Alcaldía del
+                                Municipio</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Sede Principal: Avenida Principal de Bello Monte, Centro Empresarial Baruta. Estado Miranda,
+                        Venezuela.
+                    </p>
+                    <div class="flex space-x-3 text-sm text-gray-300">
+                        <a href="#"
+                            class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-baruta-naturaleza hover:text-white transition"><i
+                                class="fa-brands fa-x-twitter"></i></a>
+                        <a href="#"
+                            class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-baruta-naturaleza hover:text-white transition"><i
+                                class="fa-brands fa-instagram"></i></a>
+                        <a href="#"
+                            class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-baruta-naturaleza hover:text-white transition"><i
+                                class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#"
+                            class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-baruta-naturaleza hover:text-white transition"><i
+                                class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <!-- Col 2: Quick Links -->
+                <div>
+                    <h4
+                        class="font-heading font-bold text-sm text-white uppercase tracking-wider mb-4 border-b border-baruta-naturaleza/50 pb-2 inline-block">
+                        Navegación</h4>
+                    <ul class="space-y-2 text-xs text-gray-300">
+                        <li><a href="#inicio" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">Inicio</a></li>
+                        <li><a href="#alcaldia" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">Alcalde y Equipo</a></li>
+                        <li><a href="#baruta-social" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">Programas Sociales</a></li>
+                        <li><a href="#seguridad" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">PoliBaruta y Emergencias</a></li>
+                        <li><a href="#transforma" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">Obras Urbanas</a></li>
+                        <li><a href="#tramites" onclick="closeNewsDetail()"
+                                class="hover:text-baruta-naturaleza transition">Trámites en Línea</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Contact & Attention -->
+                <div>
+                    <h4
+                        class="font-heading font-bold text-sm text-white uppercase tracking-wider mb-4 border-b border-baruta-naturaleza/50 pb-2 inline-block">
+                        Contacto Directo</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-300">
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-phone text-baruta-naturaleza"></i> Central: (0212) 903-8511
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-shield text-baruta-naturaleza"></i> Emergencias: 171
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-envelope text-baruta-naturaleza"></i> atencionvecinal@baruta.gob.ve
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-clock text-baruta-naturaleza"></i> Lun - Vie: 8:00 AM - 4:00 PM
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Newsletter & Transparency -->
+                <div>
+                    <h4
+                        class="font-heading font-bold text-sm text-white uppercase tracking-wider mb-4 border-b border-baruta-naturaleza/50 pb-2 inline-block">
+                        Boletín Vecinal</h4>
+                    <p class="text-xs text-gray-400 mb-3">Recibe notificaciones de cortes de agua, operativos de salud y
+                        noticias.</p>
+                    <form
+                        onsubmit="event.preventDefault(); showToastNotification('¡Gracias por suscribirte al boletín de Baruta!');"
+                        class="space-y-2">
+                        <input type="email" placeholder="Tu correo electrónico" required
+                            class="w-full px-3 py-2 rounded-lg bg-white/10 text-white placeholder-gray-400 text-xs focus:outline-none focus:ring-1 focus:ring-baruta-naturaleza border border-white/10">
+                        <button type="submit"
+                            class="w-full bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold py-2 rounded-lg text-xs transition">Suscribirme</button>
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- Copyright and Legal -->
+            <div
+                class="pt-8 text-center text-xs text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p>&copy; 2026 Alcaldía del Municipio Baruta. RIF: G-20000601-3. Todos los derechos reservados.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="hover:underline">Políticas de Privacidad</a>
+                    <a href="#" class="hover:underline">Términos de Uso</a>
+                    <a href="#" class="hover:underline">Transparencia Portal</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL: REPORTE CIUDADANO -->
+    <div id="modal-reporte"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative border border-gray-100 text-baruta-oscuro">
+            <button onclick="closeModal('modal-reporte')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-10 h-10 rounded-full bg-baruta-naturaleza text-white flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <div>
+                    <span
+                        class="text-[10px] bg-baruta-claro text-baruta-institucional font-bold px-2 py-0.5 rounded-full uppercase">Atención
+                        Vecinal</span>
+                    <h3 class="font-heading font-bold text-lg text-baruta-oscuro">Reporte Urbano Ciudadano</h3>
+                </div>
+            </div>
+            <form onsubmit="event.preventDefault(); submitReport();" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">Tipo de Incidencia</label>
+                    <select
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-baruta-institucional focus:outline-none">
+                        <option>Alumbrado Público / Luminaria</option>
+                        <option>Bacheo / Asfaltado Vial</option>
+                        <option>Recolección de Desechos / Poda</option>
+                        <option>Asistencia Vial / Tránsito</option>
+                        <option>Seguridad / Patrullaje Preventivo</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">Urbanización / Sector</label>
+                    <input type="text" required placeholder="Ej. El Cafetal, Av. Principal"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-baruta-institucional focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">Descripción Breve</label>
+                    <textarea rows="3" required placeholder="Indica puntos de referencia exactos..."
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-baruta-institucional focus:outline-none"></textarea>
+                </div>
+                <button type="submit"
+                    class="w-full bg-baruta-institucional hover:bg-baruta-oscuro text-white font-bold py-3 rounded-xl transition shadow">
+                    Enviar Reporte a Sala Situacional
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION BANNER (REEMPLAZA ALERT) -->
+    <div id="baruta-toast"
+        class="fixed bottom-5 right-5 z-50 hidden bg-baruta-oscuro text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-baruta-naturaleza flex items-center gap-3 text-xs font-semibold max-w-sm">
+        <i class="fa-solid fa-circle-check text-baruta-naturaleza text-base"></i>
+        <span id="baruta-toast-msg">Operación completada.</span>
+    </div>
+
+    <!-- MODAL: DETALLE DE EVENTO DE AGENDA -->
+    <div id="modal-evento"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100 text-baruta-oscuro">
+            <button onclick="closeModal('modal-evento')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold">
+                &times;
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-10 h-10 rounded-full bg-baruta-institucional text-white flex items-center justify-center text-lg">
+                    <i class="fa-regular fa-calendar-check"></i>
+                </div>
+                <div>
+                    <span
+                        class="text-[10px] bg-baruta-claro text-baruta-institucional font-bold px-2 py-0.5 rounded-full uppercase">Detalle
+                        del Evento</span>
+                    <h3 id="modal-event-title" class="font-heading font-bold text-lg text-baruta-oscuro mt-0.5">Título
+                        del Evento</h3>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs bg-baruta-calido p-4 rounded-2xl border border-gray-200">
+                <p class="flex items-center gap-2 text-gray-700">
+                    <i class="fa-regular fa-clock text-baruta-naturaleza"></i> <strong class="w-16">Horario:</strong>
+                    <span id="modal-event-time">--</span>
+                </p>
+                <p class="flex items-center gap-2 text-gray-700">
+                    <i class="fa-solid fa-location-dot text-red-500"></i> <strong class="w-16">Lugar:</strong> <span
+                        id="modal-event-location">--</span>
+                </p>
+                <p class="text-gray-600 leading-relaxed pt-2 border-t border-gray-200">
+                    Actividad abierta para toda la comunidad de Baruta. Se recomienda asistir con anticipación.
+                </p>
+            </div>
+
+            <button onclick="closeModal('modal-evento')"
+                class="w-full mt-4 bg-baruta-institucional text-white font-bold py-2.5 rounded-xl text-xs hover:bg-baruta-oscuro transition">
+                Cerrar Detalle
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: ORGANIGRAMA INTERACTIVO -->
+    <div id="modal-organigrama"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-organigrama')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold">
+                &times;
+            </button>
+            <h3 class="font-heading font-bold text-xl text-baruta-oscuro mb-4 text-center">Organigrama Institucional
+                Alcaldía de Baruta</h3>
+
+            <div class="space-y-4 text-xs">
+                <!-- Level 1 -->
+                <div class="bg-baruta-institucional text-white p-3 rounded-xl text-center font-bold text-sm shadow">
+                    Despacho del Alcalde
+                </div>
+
+                <div class="w-0.5 h-4 bg-gray-300 mx-auto"></div>
+
+                <!-- Level 2 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-baruta-claro p-3 rounded-xl text-center border border-baruta-institucional/20">
+                        <span class="font-bold text-baruta-institucional block">Dirección General</span>
+                        <span class="text-gray-500">Coordinación Operativa</span>
+                    </div>
+                    <div class="bg-baruta-claro p-3 rounded-xl text-center border border-baruta-institucional/20">
+                        <span class="font-bold text-baruta-institucional block">Sindicatura Municipal</span>
+                        <span class="text-gray-500">Asesoría Jurídica</span>
+                    </div>
+                </div>
+
+                <div class="w-0.5 h-4 bg-gray-300 mx-auto"></div>
+
+                <!-- Level 3 Direcciones principales -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <strong class="block text-baruta-oscuro">SEMAT</strong>
+                        <span class="text-gray-500 text-[10px]">Tributos Municipal</span>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <strong class="block text-baruta-oscuro">Infraestructura</strong>
+                        <span class="text-gray-500 text-[10px]">Obras y Vialidad</span>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <strong class="block text-baruta-oscuro">PoliBaruta</strong>
+                        <span class="text-gray-500 text-[10px]">Seguridad Ciudadana</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT & INTERACTIVE LOGIC -->
+    <script>
+        // 1. Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // 2. Base de Datos de Noticias para el Carousel 3D y Página de Detalle
+        const newsArticles = [
+            {
+                id: 1,
+                category: 'Salud',
+                badgeColor: 'bg-baruta-institucional',
+                date: '5 de Noviembre, 2026',
+                department: 'Dirección de SaludBaruta',
+                readTime: '3 min de lectura',
+                title: 'Más de 500 Adultos Mayores beneficiados en Megajornada médica en El Cafetal',
+                summary: 'Se ofrecieron servicios de medicina general, despistaje de hipertensión, atención odontológica y entrega gratuita de medicamentos.',
+                image: 'https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&w=1100&q=80',
+                lead: 'Con un despliegue multidisciplinario de médicos especialistas, enfermeras y promotores sociales, la Alcaldía de Baruta atendió de manera integral a más de 500 adultos mayores en la parroquia El Cafetal.',
+                paragraphs: [
+                    'Desde primeras horas de la mañana, los vecinos acudieron a los módulos instalados en la plaza central para recibir consultas gratuitas en medicina interna, cardiología preventiva, oftalmología y odontología general.',
+                    'Adicionalmente, a través de la farmacia comunitaria de SaludBaruta, se entregaron tratamientos completos para el control de hipertensión arterial, diabetes y suplementos vitamínicos sin costo alguno.',
+                    'Estas megajornadas forman parte del cronograma semanal que recorre todas las parroquias del municipio para garantizar atención primaria oportuna a la población más vulnerable.'
+                ],
+                quote: '“Nuestro compromiso es llevar la salud directamente a cada urbanización y sector popular de Baruta, acompañando con hechos a nuestros abuelos.”',
+                quoteAuthor: 'Equipo Médico SaludBaruta',
+                metrics: [
+                    { value: '520', label: 'Pacientes Atendidos' },
+                    { value: '1.450', label: 'Medicamentos Entregados' },
+                    { value: '6', label: 'Especialidades Médicas' }
+                ]
+            },
+            {
+                id: 2,
+                category: 'Obras',
+                badgeColor: 'bg-baruta-naturaleza',
+                date: '3 de Noviembre, 2026',
+                department: 'Dirección de Infraestructura',
+                readTime: '2 min de lectura',
+                title: 'Plan "Baruta Iluminada" instala 400 luminarias LED en Las Minas de Baruta',
+                summary: 'Trabajos de iluminación inteligente avanzan a paso firme para incrementar la visibilidad y seguridad nocturna en calles principales.',
+                image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1100&q=80',
+                lead: 'Cuadrillas de alumbrado público culminaron la sustitución de 400 puntos de luz obsoletos por luminarias LED de alta eficiencia energética en las principales vías de Las Minas de Baruta.',
+                paragraphs: [
+                    'El operativo incluyó el reemplazo de fotoceldas, cableado aéreo, brazos metálicos y revisión de transformadores en corredores peatonales y paradas de transporte público.',
+                    'La nueva tecnología LED permite ahorrar hasta un 60% de consumo eléctrico al tiempo que ofrece una iluminación blanca uniforme que fortalece la seguridad ciudadana durante horas de la noche.'
+                ],
+                quote: '“Cada calle iluminada es un espacio ganado para la tranquilidad de las familias y comerciantes baruteños.”',
+                quoteAuthor: 'Dirección de Ingeniería Municipal',
+                metrics: [
+                    { value: '400', label: 'Luminarias LED' },
+                    { value: '8.5 km', label: 'Vías Iluminadas' },
+                    { value: '100%', label: 'Operatividad Nocturna' }
+                ]
+            },
+            {
+                id: 3,
+                category: 'Seguridad',
+                badgeColor: 'bg-red-600',
+                date: '1 de Noviembre, 2026',
+                department: 'Instituto Autónomo Policía de Baruta',
+                readTime: '4 min de lectura',
+                title: 'PoliBaruta incorpora 15 nuevas patrullas y refuerza el monitoreo 24/7',
+                summary: 'Con la incorporación de nuevos cuadrantes inteligentes, se reduce el tiempo medio de respuesta en llamadas de asistencia vecinal.',
+                image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1100&q=80',
+                lead: 'Para optimizar el despliegue preventivo en todo el municipio, PoliBaruta sumó 15 nuevas unidades radiopatrulleras y motocicletas conectadas en tiempo real al Centro de Operaciones.',
+                paragraphs: [
+                    'Las nuevas unidades fueron asignadas estratégicamente a los ejes de Las Mercedes, Bello Monte, La Trinidad, El Cafetal y Baruta Pueblo, permitiendo cobertura permanente las 24 horas.',
+                    'Los vecinos pueden comunicarse de forma directa a través de la línea de emergencia (0212) 903-8511 para solicitar apoyo policial, asistencia vial o reportes preventivos.'
+                ],
+                quote: '“Seguimos invirtiendo en equipamiento y formación policial para mantener a Baruta entre los municipios más seguros del país.”',
+                quoteAuthor: 'Comandancia General PoliBaruta',
+                metrics: [
+                    { value: '15', label: 'Nuevas Unidades' },
+                    { value: '< 5 min', label: 'Tiempo de Respuesta' },
+                    { value: '24/7', label: 'Patrullaje Activo' }
+                ]
+            },
+            {
+                id: 4,
+                category: 'Comunidad',
+                badgeColor: 'bg-amber-600',
+                date: '28 de Octubre, 2026',
+                department: 'Dirección de Desarrollo Social',
+                readTime: '2 min de lectura',
+                title: 'Regresan los Mercados Vecinales a Cielo Abierto en Caurimare y Manzanares',
+                summary: 'Productos frescos de primera necesidad a precios solidarios directamente de productores locales este fin de semana.',
+                image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1100&q=80',
+                lead: 'Más de 45 productores agrícolas y emprendedores gastronómicos participan cada semana en los Mercados Vecinales organizados por la Alcaldía de Baruta.',
+                paragraphs: [
+                    'Los asistentes pueden adquirir hortalizas, frutas frescas, proteínas, lácteos y artículos de despensa con ahorros significativos respecto a los canales comerciales tradicionales.',
+                    'La jornada cuenta con puntos de pago electrónico, supervisión sanitaria y resguardo de PoliBaruta para comodidad de toda la familia.'
+                ],
+                quote: '“Apoyamos al productor local mientras protegemos el presupuesto familiar de nuestros vecinos.”',
+                quoteAuthor: 'Coordinación de Economía Vecinal',
+                metrics: [
+                    { value: '45+', label: 'Productores Locales' },
+                    { value: '18 Ton', label: 'Alimentos Distribuidos' },
+                    { value: '30%', label: 'Ahorro Promedio' }
+                ]
+            },
+            {
+                id: 5,
+                category: 'Obras',
+                badgeColor: 'bg-baruta-naturaleza',
+                date: '20 de Octubre, 2026',
+                department: 'Dirección de Áreas Verdes y Ornato',
+                readTime: '3 min de lectura',
+                title: 'Culmina rehabilitación integral del Parque El Capanaparo con nuevas áreas biosaludables',
+                summary: 'Instalación de parques infantiles, máquinas de ejercicio al aire libre y reparación de caminerías para las familias baruteñas.',
+                image: 'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=1100&q=80',
+                lead: 'El Parque El Capanaparo reabrió sus espacios totalmente renovados tras un plan integral de paisajismo, pintura, iluminación y dotación de mobiliario recreativo.',
+                paragraphs: [
+                    'Se instalaron nuevos módulos de juegos infantiles con pisos amortiguantes de seguridad, máquinas biosaludables para adultos mayores y bancas ecológicas.',
+                    'Asimismo, las cuadrillas ambientales realizaron poda fitosanitaria y sembraron más de 250 especies ornamentales adaptadas al clima local.'
+                ],
+                quote: '“Recuperar nuestros parques es fomentar el encuentro ciudadano, el deporte y la convivencia vecinal.”',
+                quoteAuthor: 'Dirección de Áreas Verdes Baruta',
+                metrics: [
+                    { value: '2.400 m²', label: 'Área Recuperada' },
+                    { value: '250', label: 'Plantas Sembradas' },
+                    { value: '12', label: 'Equipos Biosaludables' }
+                ]
+            }
+        ];
+
+        // 3. Estado y Lógica del Carousel 3D con Física Real de Arrastre (Mouse & Touch)
+        let filteredNews = [...newsArticles];
+        let activeSlideIndex = 0;
+        let isCarouselDragging = false;
+        let dragStartX = 0;
+        let dragCurrentDeltaX = 0;
+        let dragStartTime = 0;
+        let hasDraggedBeyondThreshold = false;
+
+        function renderCarousel3D() {
+            const stage = document.getElementById('news-carousel-stage');
+            const dotsContainer = document.getElementById('carousel-dots');
+            if (!stage || !dotsContainer) return;
+
+            stage.innerHTML = '';
+            dotsContainer.innerHTML = '';
+
+            filteredNews.forEach((item, index) => {
+                const card = document.createElement('article');
+                card.className = 'carousel-3d-card bg-baruta-calido rounded-3xl overflow-hidden shadow-xl border border-gray-200 flex flex-col justify-between';
+                card.setAttribute('data-index', index);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-52 overflow-hidden">
+                            <img src="${item.image}" alt="${item.title}" draggable="false" class="w-full h-full object-cover pointer-events-none">
+                            <span class="absolute top-3 left-3 ${item.badgeColor} text-white text-xs font-bold px-3 py-1 rounded-full shadow">${item.category}</span>
+                            <span class="absolute bottom-3 right-3 bg-black/65 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
+                                <i class="fa-regular fa-calendar mr-1"></i> ${item.date}
+                            </span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-heading font-bold text-lg text-baruta-oscuro leading-snug mb-2.5 line-clamp-2">
+                                ${item.title}
+                            </h3>
+                            <p class="text-gray-600 text-xs sm:text-sm line-clamp-3 leading-relaxed">
+                                ${item.summary}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3 border-t border-gray-200/70 flex items-center justify-between text-xs">
+                        <span class="text-gray-500 font-medium"><i class="fa-regular fa-clock mr-1 text-baruta-naturaleza"></i> ${item.readTime}</span>
+                        <button type="button" onclick="handleReadMoreClick(event, ${item.id})" class="bg-baruta-institucional hover:bg-baruta-naturaleza text-white font-bold px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5">
+                            Leer más <i class="fa-solid fa-arrow-right text-[11px]"></i>
+                        </button>
+                    </div>
+                `;
+
+                // Permitir hacer clic en tarjetas laterales para centrarlas (si no hubo arrastre)
+                card.addEventListener('click', (e) => {
+                    if (hasDraggedBeyondThreshold) return;
+                    if (index !== activeSlideIndex) {
+                        activeSlideIndex = index;
+                        updateCarousel3DPositions(0);
+                    }
+                });
+
+                stage.appendChild(card);
+
+                // Dot indicator
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.ariaLabel = `Ir a noticia ${index + 1}`;
+                dot.className = `h-2.5 rounded-full transition-all duration-300 ${index === activeSlideIndex ? 'w-8 bg-baruta-institucional' : 'w-2.5 bg-gray-300 hover:bg-baruta-naturaleza'}`;
+                dot.onclick = () => {
+                    activeSlideIndex = index;
+                    updateCarousel3DPositions(0);
+                };
+                dotsContainer.appendChild(dot);
+            });
+
+            updateCarousel3DPositions(0);
+        }
+
+        function updateCarousel3DPositions(dragOffsetPx = 0) {
+            const cards = document.querySelectorAll('.carousel-3d-card');
+            const dots = document.querySelectorAll('#carousel-dots button');
+            const total = cards.length;
+            if (total === 0) return;
+
+            // Factor normalizado del arrastre (-1 a +1 por cada 260px arrastrados)
+            const dragProgress = dragOffsetPx / 260;
+
+            cards.forEach((card, index) => {
+                // Calcular distancia circular más corta respecto al slide activo
+                let diff = index - activeSlideIndex;
+                if (total > 2) {
+                    if (diff > total / 2) diff -= total;
+                    if (diff < -total / 2) diff += total;
+                }
+
+                // Sumar desplazamiento continuo en tiempo real durante el arrastre
+                const effectiveOffset = diff + dragProgress;
+                const absOffset = Math.abs(effectiveOffset);
+
+                // Interpolación 3D fluida
+                const translateX = effectiveOffset * 255;
+                const translateZ = -absOffset * 150;
+                const rotateY = Math.max(-42, Math.min(42, -effectiveOffset * 26));
+                const scale = Math.max(0.72, 1 - absOffset * 0.13);
+                const opacity = absOffset > 2.2 ? 0 : Math.max(0.25, 1 - absOffset * 0.35);
+                const zIndex = Math.round(50 - absOffset * 10);
+
+                card.style.transform = `translate3d(${translateX}px, 0, ${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
+                card.style.opacity = opacity;
+                card.style.zIndex = zIndex;
+                card.style.pointerEvents = absOffset > 1.8 ? 'none' : 'auto';
+            });
+
+            dots.forEach((dot, idx) => {
+                if (idx === activeSlideIndex) {
+                    dot.className = 'h-2.5 w-8 rounded-full bg-baruta-institucional transition-all duration-300';
+                } else {
+                    dot.className = 'h-2.5 w-2.5 rounded-full bg-gray-300 hover:bg-baruta-naturaleza transition-all duration-300';
+                }
+            });
+        }
+
+        function moveCarousel(direction) {
+            const total = filteredNews.length;
+            if (total === 0) return;
+            activeSlideIndex = (activeSlideIndex + direction + total) % total;
+            updateCarousel3DPositions(0);
+        }
+
+        function prevNewsSlide() {
+            moveCarousel(-1);
+        }
+
+        function nextNewsSlide() {
+            moveCarousel(1);
+        }
+
+        function filterCarouselCategory(category, btnEl) {
+            document.querySelectorAll('.carousel-cat-btn').forEach(btn => {
+                btn.classList.remove('bg-baruta-institucional', 'text-white', 'shadow');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            if (btnEl) {
+                btnEl.classList.remove('bg-gray-100', 'text-gray-700');
+                btnEl.classList.add('bg-baruta-institucional', 'text-white', 'shadow');
+            }
+
+            filteredNews = category === 'all'
+                ? [...newsArticles]
+                : newsArticles.filter(n => n.category === category);
+            activeSlideIndex = 0;
+            renderCarousel3D();
+        }
+
+        function initCarouselDragPhysics() {
+            const viewport = document.getElementById('news-carousel-viewport');
+            if (!viewport) return;
+
+            const onDragStart = (clientX) => {
+                isCarouselDragging = true;
+                dragStartX = clientX;
+                dragCurrentDeltaX = 0;
+                dragStartTime = performance.now();
+                hasDraggedBeyondThreshold = false;
+                viewport.classList.add('is-dragging');
+            };
+
+            const onDragMove = (clientX) => {
+                if (!isCarouselDragging) return;
+                dragCurrentDeltaX = clientX - dragStartX;
+                if (Math.abs(dragCurrentDeltaX) > 6) {
+                    hasDraggedBeyondThreshold = true;
+                }
+                updateCarousel3DPositions(dragCurrentDeltaX);
+            };
+
+            const onDragEnd = () => {
+                if (!isCarouselDragging) return;
+                isCarouselDragging = false;
+                viewport.classList.remove('is-dragging');
+
+                const elapsed = Math.max(1, performance.now() - dragStartTime);
+                const velocity = Math.abs(dragCurrentDeltaX) / elapsed; // px por ms
+                const distanceThreshold = 55;
+                const fastSwipe = velocity > 0.45 && Math.abs(dragCurrentDeltaX) > 25;
+
+                if (dragCurrentDeltaX < -distanceThreshold || (fastSwipe && dragCurrentDeltaX < 0)) {
+                    moveCarousel(1);
+                } else if (dragCurrentDeltaX > distanceThreshold || (fastSwipe && dragCurrentDeltaX > 0)) {
+                    moveCarousel(-1);
+                } else {
+                    updateCarousel3DPositions(0);
+                }
+
+                // Restablecer bandera tras el ciclo de clic
+                setTimeout(() => {
+                    hasDraggedBeyondThreshold = false;
+                }, 60);
+            };
+
+            // Eventos Mouse
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                onDragStart(e.clientX);
+            });
+            window.addEventListener('mousemove', (e) => onDragMove(e.clientX));
+            window.addEventListener('mouseup', onDragEnd);
+            viewport.addEventListener('mouseleave', () => {
+                if (isCarouselDragging) onDragEnd();
+            });
+
+            // Eventos Touch (Móvil / Tablet)
+            viewport.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    onDragStart(e.touches[0].clientX);
+                }
+            }, { passive: true });
+
+            viewport.addEventListener('touchmove', (e) => {
+                if (isCarouselDragging && e.touches.length === 1) {
+                    onDragMove(e.touches[0].clientX);
+                }
+            }, { passive: true });
+
+            viewport.addEventListener('touchend', onDragEnd);
+            viewport.addEventListener('touchcancel', onDragEnd);
+        }
+
+        // 4. Página Completa de Detalle de Noticia ("Leer más")
+        function handleReadMoreClick(event, articleId) {
+            event.stopPropagation();
+            if (hasDraggedBeyondThreshold) return;
+            openNewsDetail(articleId);
+        }
+
+        function openNewsDetail(articleId) {
+            const article = newsArticles.find(a => a.id === articleId);
+            if (!article) return;
+
+            document.getElementById('detail-news-img').src = article.image;
+            document.getElementById('detail-news-cat').innerText = article.category;
+            document.getElementById('detail-news-title').innerText = article.title;
+            document.getElementById('detail-news-date').innerText = article.date;
+            document.getElementById('detail-news-dept').innerText = article.department;
+            document.getElementById('detail-news-read').innerText = article.readTime;
+            document.getElementById('detail-news-lead').innerText = article.lead;
+            document.getElementById('detail-news-quote').innerText = article.quote;
+            document.getElementById('detail-news-quote-author').innerText = `— ${article.quoteAuthor}`;
+
+            const bodyContainer = document.getElementById('detail-news-body');
+            bodyContainer.innerHTML = article.paragraphs.map(p => `<p>${p}</p>`).join('');
+
+            const metricsContainer = document.getElementById('detail-news-metrics');
+            metricsContainer.innerHTML = article.metrics.map(m => `
+                <div>
+                    <div class="text-xl sm:text-2xl font-black text-baruta-naturaleza font-heading">${m.value}</div>
+                    <div class="text-[11px] text-baruta-claro uppercase tracking-wider mt-0.5">${m.label}</div>
+                </div>
+            `).join('');
+
+            // Noticias relacionadas
+            const relatedContainer = document.getElementById('detail-related-news');
+            const related = newsArticles.filter(a => a.id !== article.id).slice(0, 2);
+            relatedContainer.innerHTML = related.map(rel => `
+                <div onclick="openNewsDetail(${rel.id})" class="cursor-pointer bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
+                    <img src="${rel.image}" alt="${rel.title}" class="h-36 w-full object-cover">
+                    <div class="p-4">
+                        <span class="text-[10px] font-bold text-baruta-naturaleza uppercase">${rel.category} • ${rel.date}</span>
+                        <h4 class="font-heading font-bold text-sm text-baruta-oscuro mt-1 line-clamp-2">${rel.title}</h4>
+                    </div>
+                </div>
+            `).join('');
+
+            const detailPage = document.getElementById('news-detail-page');
+            detailPage.classList.remove('hidden');
+            detailPage.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeNewsDetail() {
+            document.getElementById('news-detail-page').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function copyArticleLink() {
+            const tempInput = document.createElement('input');
+            tempInput.value = window.location.href;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToastNotification('Enlace de la noticia copiado al portapapeles.');
+        }
+
+        function showToastNotification(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 right-6 z-50 bg-baruta-oscuro text-white text-xs font-bold px-5 py-3.5 rounded-2xl shadow-2xl border border-baruta-naturaleza flex items-center gap-2.5';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-baruta-naturaleza text-base"></i> <span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        // 5. Visualización de detalle de evento en Calendario
+        function showEventDetail(title, time, location) {
+            document.getElementById('modal-event-title').innerText = title;
+            document.getElementById('modal-event-time').innerText = time;
+            document.getElementById('modal-event-location').innerText = location;
+            openModal('modal-evento');
+        }
+
+        // 6. Search Bar Dropdown Toggle
+        function toggleSearch() {
+            const searchBar = document.getElementById('search-bar');
+            searchBar.classList.toggle('hidden');
+        }
+
+        // 7. Modals Open/Close Helper
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('hidden');
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // 8. Trámites Tabs Switcher
+        function switchTab(tabKey) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-baruta-institucional', 'border-b-2', 'border-baruta-institucional', 'bg-white');
+                btn.classList.add('text-gray-500');
+            });
+
+            document.getElementById('tab-' + tabKey).classList.remove('hidden');
+
+            const activeBtn = document.getElementById('tab-btn-' + tabKey);
+            activeBtn.classList.add('active', 'text-baruta-institucional', 'border-b-2', 'border-baruta-institucional', 'bg-white');
+            activeBtn.classList.remove('text-gray-500');
+        }
+
+        // 9. Before / After Interactive Slider Drag Logic
+        const slider = document.getElementById('ba-slider');
+        const afterLayer = document.getElementById('ba-after-layer');
+        const bar = document.getElementById('ba-bar');
+        let isDragging = false;
+
+        if (slider && afterLayer && bar) {
+            const moveSlider = (x) => {
+                const rect = slider.getBoundingClientRect();
+                let position = x - rect.left;
+                if (position < 0) position = 0;
+                if (position > rect.width) position = rect.width;
+                const percentage = (position / rect.width) * 100;
+
+                afterLayer.style.clipPath = `polygon(0 0, ${percentage}% 0, ${percentage}% 100%, 0 100%)`;
+                bar.style.left = `${percentage}%`;
+            };
+
+            slider.addEventListener('mousedown', () => isDragging = true);
+            window.addEventListener('mouseup', () => isDragging = false);
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                moveSlider(e.clientX);
+            });
+
+            slider.addEventListener('touchstart', () => isDragging = true, { passive: true });
+            window.addEventListener('touchend', () => isDragging = false);
+            slider.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                moveSlider(e.touches[0].clientX);
+            }, { passive: true });
+        }
+
+        // 10. Leaflet Map Initialization & Actions Markers
+        let map;
+        let mapMarkers = [];
+
+        window.onload = function () {
+            // Inicializar Carousel 3D con Física de Arrastre
+            renderCarousel3D();
+            initCarouselDragPhysics();
+
+            // Initialize Leaflet Map centered on Baruta, Caracas
+            map = L.map('baruta-map').setView([10.4350, -66.8650], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '© OpenStreetMap - Alcaldía de Baruta'
+            }).addTo(map);
+
+            const mapData = [
+                { lat: 10.4389, lng: -66.8530, type: 'obras', title: 'Rehabilitación Plaza Alfredo Sadel', desc: 'Asfaltado y luminarias LED completadas.' },
+                { lat: 10.4470, lng: -66.8610, type: 'salud', title: 'Ambulatorio SaludBaruta Bello Monte', desc: 'Jornada médica gratuita permanente.' },
+                { lat: 10.4280, lng: -66.8720, type: 'seguridad', title: 'Sede Central PoliBaruta', desc: 'Módulo de respuesta 24/7.' },
+                { lat: 10.4190, lng: -66.8450, type: 'obras', title: 'Asfaltado Av. Intercomunal La Trinidad', desc: '400 Toneladas coladas.' },
+                { lat: 10.4420, lng: -66.8320, type: 'salud', title: 'Jornada Móvil El Cafetal', desc: 'Despistaje de presión y pediatría.' }
+            ];
+
+            mapData.forEach(item => {
+                const marker = L.marker([item.lat, item.lng]).addTo(map);
+                marker.bindPopup(`
+                    <div style="font-family: sans-serif; font-size: 12px;">
+                        <strong style="color: #145C3B; font-size: 13px;">${item.title}</strong><br/>
+                        <span>${item.desc}</span>
+                    </div>
+                `);
+                marker.category = item.type;
+                mapMarkers.push(marker);
+            });
+
+            // Configurar observador para Baruta en Cifras
+            setupCountersObserver();
+        };
+
+        function filterMap(category) {
+            mapMarkers.forEach(marker => {
+                if (category === 'all' || marker.category === category) {
+                    map.addLayer(marker);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+        }
+
+        // 11. Animaciones de Conteo Fluido (easeOutQuart + IntersectionObserver + Barras de Progreso)
+        let countersHaveAnimated = false;
+
+        function setupCountersObserver() {
+            const section = document.getElementById('baruta-cifras');
+            if (!section) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !countersHaveAnimated) {
+                        countersHaveAnimated = true;
+                        animateCounters();
+                    }
+                });
+            }, { threshold: 0.25 });
+
+            observer.observe(section);
+        }
+
+        function setupTestimonialVideoObserver() {
+            const section = document.getElementById('testimonio-video');
+            const video = section?.querySelector('video');
+            if (!section || !video) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        video.play().catch(error => {
+                            if (error.name !== 'AbortError') {
+                                console.warn('No se pudo reproducir automáticamente el video.', error);
+                            }
+                        });
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, { threshold: 0.25 });
+
+            observer.observe(section);
+        }
+
+        setupTestimonialVideoObserver();
+
+        function replayCounters() {
+            countersHaveAnimated = true;
+            document.querySelectorAll('.cifra-card').forEach(card => {
+                card.classList.remove('is-visible');
+                const bar = card.querySelector('.cifra-progress');
+                if (bar) bar.style.width = '0%';
+            });
+            document.querySelectorAll('.counter').forEach(c => c.classList.remove('counter-finished'));
+            setTimeout(() => animateCounters(), 80);
+        }
+
+        function animateCounters() {
+            const cards = document.querySelectorAll('.cifra-card');
+            cards.forEach(card => card.classList.add('is-visible'));
+
+            const counters = document.querySelectorAll('.counter');
+            const duration = 2000; // 2 segundos con desaceleración suave
+
+            counters.forEach((counter, idx) => {
+                const target = parseInt(counter.getAttribute('data-target'), 10);
+                const prefix = counter.getAttribute('data-prefix') || '';
+                const suffix = counter.getAttribute('data-suffix') || '';
+                const progressTarget = counter.getAttribute('data-progress') || '100';
+                const progressBar = counter.closest('.cifra-card')?.querySelector('.cifra-progress');
+
+                if (progressBar) {
+                    setTimeout(() => {
+                        progressBar.style.width = progressTarget + '%';
+                    }, idx * 120 + 100);
+                }
+
+                const startTime = performance.now() + idx * 100;
+
+                const step = (now) => {
+                    if (now < startTime) {
+                        requestAnimationFrame(step);
+                        return;
+                    }
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Curva easeOutQuart: desaceleración orgánica al acercarse al número final
+                    const eased = 1 - Math.pow(1 - progress, 4);
+                    const currentVal = Math.round(eased * target);
+
+                    counter.innerText = `${prefix}${currentVal.toLocaleString('es-VE')}${suffix}`;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        counter.innerText = `${prefix}${target.toLocaleString('es-VE')}${suffix}`;
+                        counter.classList.add('counter-finished');
+                    }
+                };
+
+                requestAnimationFrame(step);
+            });
+        }
+
+        function simulateSearch() {
+            showToastNotification('Consultando servidor del SEMAT... Redirigiendo a pasarela segura.');
+        }
+
+        function submitReport() {
+            showToastNotification('Reporte enviado exitosamente. Código: INC-2026-8831.');
+            closeModal('modal-reporte');
+        }
+    </script>
+</body>
+
+</html>
