@@ -278,22 +278,22 @@
     <!-- TOP EMERGENCY & CITIZEN ALERT BAR -->
     <div
         class="bg-baruta-oscuro text-white text-xs md:text-sm py-2 px-4 shadow-md sticky top-0 z-50 border-b border-baruta-institucional">
-        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-1">
-            <div class="flex items-center gap-2">
-                <span class="inline-flex items-center gap-1.5 font-semibold text-red-400 animate-pulse">
+        <div class="max-w-7xl mx-auto flex flex-nowrap sm:flex-wrap justify-between items-center gap-1 sm:gap-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-1 sm:flex-nowrap sm:gap-4">
+                <span class="inline-flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold text-red-400 animate-pulse sm:text-xs">
                     <i class="fa-solid fa-phone-volume"></i> Emergencias Baruta:
                 </span>
-                <a href="tel:02129038511" class="hover:underline font-bold text-white"><i
-                        class="fa-solid fa-shield-halved text-baruta-naturaleza "></i> (0212) 903-8511</a>
+                <a href="tel:02129038511" class="whitespace-nowrap text-[10px] font-bold text-white hover:underline sm:text-xs"><i
+                        class="fa-solid fa-shield-halved text-baruta-naturaleza mr-0.5 sm:mr-1"></i> (0212) 903-8511</a>
                 <span class="hidden sm:inline text-gray-400">|</span>
                 <a href="tel:171" class="hidden sm:inline hover:underline font-bold text-white"><i
                         class="fa-solid fa-truck-medical text-baruta-naturaleza mr-1"></i> 171</a>
             </div>
-            <div class="flex items-center gap-4 text-xs">
+            <div class="flex shrink-0 items-center gap-1 text-[10px] sm:gap-4 sm:text-xs">
                 <span class="hidden md:inline"><i class="fa-regular fa-clock mr-1 text-baruta-naturaleza"></i> Atención
                     Ciudadana: Lun - Vie 8:00 AM - 4:00 PM</span>
                 <button onclick="openModal('modal-reporte')"
-                    class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-full text-xs transition duration-200 flex items-center gap-1 shadow">
+                    class="bg-baruta-naturaleza hover:bg-emerald-600 text-white font-bold px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs transition duration-200 flex items-center gap-1 whitespace-nowrap shadow">
                     <i class="fa-solid fa-bullhorn"></i> Reporte Ciudadano
                 </button>
             </div>
@@ -1128,7 +1128,7 @@
         <!-- SECTION: TESTIMONIO DE LA COMUNIDAD A PANTALLA COMPLETA (100% WIDTH VIDEO SIN TÍTULO DE SECCIÓN) -->
         <section id="testimonio-video" class="relative w-full min-h-[820px] flex items-end justify-center overflow-hidden my-0">
             <!-- Video HTML5 con reproducción automática al entrar en la sección -->
-            <video muted playsinline class="absolute inset-0 w-full h-full object-cover">
+            <video muted playsinline controls class="absolute inset-0 w-full h-full object-cover">
                 <source src="seccion.mp4" type="video/mp4">
                 Tu navegador no soporta la reproducción de videos.
             </video>
